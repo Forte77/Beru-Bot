@@ -52,7 +52,7 @@ class Events(commands.Cog):
         print(guild_id)
         guild = self.bot.get_guild(guild_id)
         member = await guild.fetch_member(user_id) #how to get member for remove
-        '''if member is None:
+        '''if member is None: # Couldn't get this part working
             # Member not found in cache, try fetching
             try:
                 member = await guild.fetch_member(user_id)
