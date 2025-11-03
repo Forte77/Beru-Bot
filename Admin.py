@@ -9,7 +9,6 @@ class Admin(commands.Cog):
     #initialize Admin class
     def __init__(self,bot): #not async
         self.bot = bot
-
     @commands.command()
     @commands.has_permissions(manage_messages = True)
     async def purge(self,ctx, amount, day : int = None, month : int = None, year : int = datetime.now().year): #options to input date for the purging
