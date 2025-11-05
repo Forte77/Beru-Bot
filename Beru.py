@@ -61,5 +61,6 @@ async def on_ready():
     await bot.load_extension("Cogs")
     await bot.load_extension("Events")
     await bot.load_extension("Misc")
+    await bot.load_extension("Music")
     print("Beru has been summoned.") 
 bot.run(token) 
