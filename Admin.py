@@ -26,7 +26,7 @@ class Admin(commands.Cog):
         if isinstance(error,commands.CommandInvokeError):
             await ctx.send("You can only have a slash or a number as the first input")
     #Help command for admin commands
-    #@commands.command()
+    @commands.command()
     async def adminhelp(self,ctx):
         #Building the help command in an embed.
         MyEmbed = discord.Embed(title = "Commands", description = "These are the available commands",color = discord.Colour.from_str(value= "#FFD700"))
