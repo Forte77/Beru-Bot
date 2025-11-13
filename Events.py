@@ -17,7 +17,7 @@ class Events(commands.Cog):
                 await msg.channel.send("hello " + username)
             elif msg.content == "Hello":
                 await msg.channel.send("Hello " + username)
-            elif msg.content == "p":
+            elif msg.content == "p" or msg.content == "P":
                 await msg.channel.send("Shut up Blizzerd")
             elif msg.content == "timezone":
                 await msg.channel.send("[Timezone helper](https://discordtools.io/timestamp)")
