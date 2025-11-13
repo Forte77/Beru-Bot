@@ -21,12 +21,13 @@ async def help(ctx):
     #settting the thumbnail for the embed to Zani
     MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
     #You can add 'inline = False' to make them display Vertically
-    MyEmbed.add_field(name = "?ping", value = "This command replies back with Pong when used",inline = False)
-    MyEmbed.add_field(name = "?luck", value = "This command flips a coin 3 times",inline = False)
-    MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers.",inline = False)
-    MyEmbed.add_field(name = "?alarm", value = "This command sets an alarm for a given time. If the hour is after Noon then add 12. Ex: hh:mm",inline = False)
+    MyEmbed.add_field(name = "?alarm", value = "This command sets an alarm for a given time(24h) for only one server member(at the moment). If the hour is after Noon then add 12. Ex: hh:mm",inline = False)
+    MyEmbed.add_field(name = "?battleship", value = "Start a game of battleship with another member. You can also choose the vertical and horizontal dimensions of the board. Ex: \n?battleship @friendo 5 5",inline = False)
     MyEmbed.add_field(name = "?choose4me", value = "This command will randomly select from a list of things. Activate the command and then put in the options one by one",inline = False)
     MyEmbed.add_field(name = "?creator", value = "Just pulls up contact information",inline = False)
+    MyEmbed.add_field(name = "?luck", value = "This command flips a coin 3 times",inline = False)
+    MyEmbed.add_field(name = "?ping", value = "This command replies back with Pong when used",inline = False)
+    MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers.",inline = False)
     #Send embed that was built.
     await ctx.send(embed=MyEmbed)
 @bot.command(aliases = ["contact","master"]) #Wanted to make a command to give contact info for me if I open this up to the public
@@ -56,11 +57,11 @@ async def errorhandler(ctx,error):
             await ctx.send("You're not my Master!")
 @bot.event #bot.event IS a function. bot.command() CALLS a function
 async def on_ready():
-    # await bot.add_cog(MyCog(bot)) if I didn't have the extension
     await bot.load_extension("Admin")
     await bot.load_extension("Cogs")
     await bot.load_extension("Events")
     await bot.load_extension("Misc")
     await bot.load_extension("Music")
+    await bot.load_extension("Battleship")
     print("Beru has been summoned.") 
 bot.run(token) 
