@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext import tasks
 from discord.member import Member
-import discord, youtube_dl
+import yt_dlp
 # Need a join, leave, play, pause, skip, queue, and maybe move command
 class Music(commands.Cog):
     #initialize Cog class..Don't have to redo bot and intents stuff.
@@ -26,17 +26,17 @@ class Music(commands.Cog):
     async def leave(self,ctx, help = "leaves the Voice Channel"):
         await ctx.voice_client.disconnect()
         print("leaving")
-    # pip install youtube_dl
+    # pip install yt_dlp
     @commands.command() # Play a song
     async def play(self,ctx,*,searchword): # takes context and search
         ydl_opts = {} # Options that ydl library takes in so it knows how to download specific files
         # Get Title
         if searchword[0:4] == "http" or searchword[0:3] == "www":
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl: # syntax from youtube_dl
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl: # syntax from youtube_dl
                 info = ydl.extract_info(searchword,download=False) #extracts info from search result
                 title = info["title"]
         if searchword[0:4] != "http" or searchword[0:3] != "www":
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl: # syntax from youtube_dl
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl: # syntax from youtube_dl
                 info = ydl.extract_info(f"ytsearch: {searchword}",download=False)["entries"][0] #extracts info from search result
                 title = info["title"]
                 url = info["webpage_url"]
@@ -45,10 +45,10 @@ class Music(commands.Cog):
             "format" : "bestaudio/best",
             "outtmp1" : f"{title}.mp3",
             "postprocessors":
-            [{"key" : "FFmpegExtractAudio", "preferredcodec" : "mp3", "preferredquality": 192}]
+            [{"key" : "FFmpegExtractAudio", "preferredcodec" : "mp3", "preferredquality": "192"}]
         }
-        with youtube_dl.YoutubeDL(ydl) as ydl:
-            ydl.download([url])
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.dl([url])
         print("playing")
 #Setup
 async def setup(bot):
