@@ -118,6 +118,7 @@ class Battleship(commands.Cog):
                         nextTurn = self.player1
                     loweralphabet = coordinate[0].lower()
                     numbers = coordinate[1]
+                    skip = False
                     x = ord(loweralphabet) - 97 #ord converts alphabet to numbers but a starts at 97 and we need it at zero
                     y = int(numbers) - 1 # subtract one to line up properly
                     square = shootboard[y][x]
@@ -125,16 +126,28 @@ class Battleship(commands.Cog):
                         await ctx.send("HIT!")
                         shootboard[y][x] = ":boom:"
                         displayboard[y][x] = ":boom:"
-                        await ctx.send("Go AGAIN!!")
+                        await ctx.send("Go AGAIN!!") # Letting the player know they can go again
+                        if ctx.author == self.player1: # Telling the other player they have been hit.
+                            #print("Test player 1")
+                            await self.player2.send("Your ship has been hit!\nWhat your opponent sees: ")
+                            await self.render(self.player2,displayboard)
+                            skip = True
+                        if ctx.author == self.player2: # Telling the other player they have been hit.
+                            #print("Test player 2")
+                            await self.player1.send("Your ship has been hit!\nWhat your opponent sees: ")
+                            await self.render(self.player1,displayboard)
+                            skip = True
                     if square == ":blue_square:":#miss
                         await ctx.send("*MISS!*")
                         shootboard[y][x] = ":white_medium_square:"
                         displayboard[y][x] = ":white_medium_square:"
-                        self.turn = nextTurn
+                        self.turn = nextTurn #Changing turn
                         await self.turn.send("It is now your turn to shoot. Use ?shoot [x][y]")
                     if square ==":white_medium_square:" or square == "boom":#dumb
                         await ctx.send("You...you already did that one.... try again.")
-                    await self.render(ctx.author,displayboard) #update board
+                    #print(skip)
+                    if skip == False: #Had to add this cuz I found out I can't render the board twice basically.
+                        await self.render(ctx.author,displayboard) #update board
                     if self.shipcount(shootboard) == 0: #end the game
                         self.playing = False
                         #Notify players who won
@@ -162,6 +175,8 @@ class Battleship(commands.Cog):
     async def errorhandler(self,ctx,error):
         if isinstance(error,commands.errors.MissingRequiredArgument):
             await ctx.send("Please define the coordinate")
+        if isinstance(error,commands.errors.TooManyArguments):
+            await ctx.send("You can only shoot at one coordinate at a time.")
 #setup done outside the class
 async def setup(bot):
     await bot.add_cog(Battleship(bot))
