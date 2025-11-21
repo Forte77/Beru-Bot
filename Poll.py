@@ -9,7 +9,7 @@ class Poll(commands.Cog):
     def __init__(self,bot): #not async
         self.bot = bot
         self.numbers = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
-    @commands.command
+    @commands.command()
     async def poll(self, ctx, minutes : int,title,*options):
         if len(options) == 0: # checking if there are options given and if not then assume a yes or no type.
             pollEmbed = discord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Make embed
