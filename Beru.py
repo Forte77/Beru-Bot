@@ -27,6 +27,7 @@ async def help(ctx):
     MyEmbed.add_field(name = "?creator", value = "Just pulls up contact information",inline = False)
     MyEmbed.add_field(name = "?luck", value = "This command flips a coin 3 times",inline = False)
     MyEmbed.add_field(name = "?ping", value = "This command replies back with Pong when used",inline = False)
+    MyEmbed.add_field(name = "?poll", value = "This command creates a poll for [x] amount of minutes with the tile and options given. EX: **?poll 5 \"Amber checks DMs\" yes no sometimes rarely** This will create a 5 min poll with the title of Amber checks DMs with 4 different options.",inline = False)
     MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers.",inline = False)
     #Send embed that was built.
     await ctx.send(embed=MyEmbed)

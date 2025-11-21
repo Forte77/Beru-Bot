@@ -37,7 +37,6 @@ class Poll(commands.Cog):
             counts = []
             msg = discord.utils.get(self.bot.cached_messages, id = msg.id)
             reactions = msg.reactions
-
             for reaction in reactions: #going through all reactions and getting how many
                 counts.append(reaction.count)
             max_value = max(counts)
@@ -62,7 +61,6 @@ class Poll(commands.Cog):
                     await ctx.send("Time's Up!")
                     await ctx.send(f"{winEmoji.emoji} **{winner}** has won the Poll!")
         self.poll_loop.stop()
-
 #setup done outside the class
 async def setup(bot):
     await bot.add_cog(Poll(bot))
