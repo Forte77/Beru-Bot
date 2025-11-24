@@ -32,11 +32,9 @@ class Misc(commands.Cog):
             await ctx.channel.send(f"You should do:\n" + pick)
         except TypeError:
             await ctx.channel.send(f"Invalid input. Please run the command again... but better this time.")
-
     async def choose(self,ctx,done,options,i):
         def check(message): # Get the user
             return message.author == ctx.author and message.channel == ctx.channel # Check the message is a valid response from the right person in the right channel
-        
         try:
             msg = await self.bot.wait_for('message',check=check,timeout=30.0) # Wait 30 seconds
         except asyncio.TimeoutError:
@@ -59,9 +57,8 @@ class Misc(commands.Cog):
         funnies = ["https://cdn.discordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
         link = random.randint(1,2)
         await ctx.channel.send(f"Here's something that might give you a laugh:\n"+funnies[link-1])
-    
     @commands.check(is_me)
-    @commands.command()
+    @commands.command() # command for my own use lol
     async def justdoit(self,ctx):
         await ctx.channel.purge(limit = 1)
         task = ["Japanese","Coding","Skyward"]

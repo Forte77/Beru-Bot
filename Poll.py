@@ -2,24 +2,33 @@ import discord
 from discord.ext import commands
 from discord.ext import tasks
 from discord.member import Member
-
+def is_me(ctx):
+    return ctx.author.id == 300868241100636160
 #Cog Syntax:
 class Poll(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.
     def __init__(self,bot): #not async
         self.bot = bot
         self.numbers = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+        self.options = None
     @commands.command()
     async def poll(self, ctx, minutes : int,title,*options):
-        if len(options) == 0: # checking if there are options given and if not then assume a yes or no type.
+        #print(self.poll_loop.is_running())
+        if (self.poll_loop.is_running() == True):
+            await ctx.send("There is already a poll running. Please wait...")
+        elif len(options) == 0: # checking if there are options given and if not then assume a yes or no type.
             pollEmbed = discord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Make embed
             msg = await ctx.send(embed = pollEmbed)
             await msg.add_reaction("👍")
             await msg.add_reaction("👎")
+        elif len(options) == 1:
+            await ctx.send("Don't make a poll if you're only going to give one option...")
+        elif len(options)>10:
+            await ctx.send("Please try to limit your poll to 10 options")
         else:
             pollEmbed = discord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Reminder that all embeds take a title & description
             for number,option in enumerate(options): # enumerate returns the numbered index and the item
-                pollEmbed.add_field(name = f"{self.numbers[number]}", value = f"**{option}**", inline = False)
+                    pollEmbed.add_field(name = f"{self.numbers[number]}", value = f"**{option}**", inline = False)
             msg = await ctx.send(embed = pollEmbed)
             for x in range(len(pollEmbed.fields)): # adding numbered reactions for each item
                 await msg.add_reaction(self.numbers[x])
@@ -41,8 +50,7 @@ class Poll(commands.Cog):
             for reaction in reactions: #going through all reactions and getting how many
                 counts.append(reaction.count)
             max_value = max(counts)
-            print(self.poll_loop.is_running())
-            i = 0 
+            i = 0
             for count in counts:
                 if count == max_value:
                     i = i+1
@@ -62,7 +70,15 @@ class Poll(commands.Cog):
                     winEmoji = reactions[max_index]
                     await ctx.send("## Time's Up!")
                     await ctx.send(f"{winEmoji.emoji} **{winner}** has won the Poll!")
-        
+    @commands.command()
+    @commands.check(is_me)
+    async def stopPoll(self,ctx):
+        self.poll_loop.cancel()
+        await ctx.send("Poll timer has been stopped. You may now start another poll.")
+    @stopPoll.error
+    async def errorhandler(self,ctx,error): # Error handlers need ctx and the error
+        if isinstance(error,commands.CheckFailure): # Check for a specific error that is expected to pop up.
+            await ctx.send("You're not my Master!") # Do something else instead of crashing
     @poll.error
     async def errorhandler(self,ctx,error):
         if isinstance(error,commands.errors.BadArgument):

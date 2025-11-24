@@ -9,7 +9,6 @@ class MyCog(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self._last_member = None
-    
     @commands.Cog.listener() #Cog equivalent of Bot.listen
     async def on_member_join(self,member):
         channel = member.guild.system_channel
@@ -41,7 +40,7 @@ class MyCog(commands.Cog):
             await ctx.author.dm_channel.send("It's time now!")
             self.alarms.stop()
     @commands.command()
-    async def alarm(self,ctx,date,r=None):
+    async def alarm(self,ctx,date,r=None): # takes the time and the reason for the alarm if given
         hour,minute = date.split(":")
         hour = int(hour)
         minute = int(minute)
@@ -58,13 +57,11 @@ class MyCog(commands.Cog):
             await ctx.send("Only one alarm can be set")
         if isinstance(error,RuntimeError):
             await ctx.send("Only one alarm can be set")
-
     @commands.command()
     async def start(self,ctx):
         self.task.start(ctx)
     @commands.command()
     async def stop(self,ctx):
-        self.task.stop()
-        
+        self.task.stop()    
 async def setup(bot):
     await bot.add_cog(MyCog(bot))

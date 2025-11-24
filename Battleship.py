@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-
 #Cog Syntax:
 class Battleship(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.
@@ -82,7 +81,7 @@ class Battleship(commands.Cog):
                         loweralphabet = alphabet.lower()
                         x = ord(loweralphabet) - 97 #ord converts alphabet to numbers but a starts at 97 and we need it at zero
                         y = int(numbers) - 1 # subtract one to line up properly
-                        if board[y][x] is not ":ship:":
+                        if board[y][x] != ":ship:":
                             board[y][x] = ":ship:"
                         else:
                             await ctx.send("One of you tried a duplicate placement! This will be ignored.")

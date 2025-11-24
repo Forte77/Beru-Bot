@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord.ext import tasks
 from discord.member import Member
 from datetime import datetime
-
 class Events(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
@@ -28,7 +27,8 @@ class Events(commands.Cog):
         guildname = guild.name
         dmchannel = await member.create_dm()
         await dmchannel.send(f"Welcome to {guildname}!")
-    @commands.Cog.listener()
+    #Going to comment out this whole section. It was partially triggering with the poll and I don't really need it right now  but I wanna keep the stuff above active. Going to just leave it here as notes I guess
+    '''@commands.Cog.listener()
     async def on_raw_reaction_add(self,payload):
         emoji = payload.emoji.name
         member = payload.member #this implementation only works on reaction add
@@ -52,19 +52,19 @@ class Events(commands.Cog):
         print(guild_id)
         guild = self.bot.get_guild(guild_id)
         member = await guild.fetch_member(user_id) #how to get member for remove
-        '''if member is None: # Couldn't get this part working
+        if member is None: # Couldn't get this part working
             # Member not found in cache, try fetching
             try:
                 member = await guild.fetch_member(user_id)
             except discord.NotFound:
                 # Member not found in the guild
-                return'''
+                return
         if emoji == "🎮" and message_id == 1429934331115212841:
             role = discord.utils.get(guild.roles, name = "gamer")
             await member.remove_roles(role)
         if emoji == "📓" and message_id == 1429934331115212841:
             role = discord.utils.get(guild.roles, name = "QA")
             await member.remove_roles(role)
-
+    '''
 async def setup(bot):
     await bot.add_cog(Events(bot))

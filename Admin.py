@@ -25,21 +25,6 @@ class Admin(commands.Cog):
             await ctx.send("Enter how many messages to purge.")
         if isinstance(error,commands.CommandInvokeError):
             await ctx.send("You can only have a slash or a number as the first input")
-    #Help command for admin commands
-    @commands.command()
-    async def adminhelp(self,ctx):
-        #Building the help command in an embed.
-        MyEmbed = discord.Embed(title = "Commands", description = "These are the available commands",color = discord.Colour.from_str(value= "#FFD700"))
-        #settting the thumbnail for the embed to Zani
-        MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
-        #You can add 'inline = False' to make them display Vertically
-        MyEmbed.add_field(name = "?edit [...]", value = "This command is used to edit server information, channels, and roles.",inline = False) 
-        MyEmbed.add_field(name = "?kick", value = "This command kicks the user",inline = False)
-        MyEmbed.add_field(name = "?ban", value = "This command bans the user",inline = False)
-        MyEmbed.add_field(name = "?purge", value = "This command purge's message by either amount or after a certain date. [dd/mm/yyyy]")
-        #MyEmbed.add_field(name = "?", value = "This command ",inline = False)
-        #Send embed that was built.
-        await ctx.send(embed=MyEmbed)
     #Creating nested functions/sub commands
     @commands.group() #allows nested subcommands into main command
     @commands.check(is_me)
@@ -79,7 +64,8 @@ class Admin(commands.Cog):
                     await ctx.send("User has been given the " + rolename + " role.")
                     return
                 else:
-                    await ctx.send("User already has this role")
+                    await ctx.send("User has this role. It will be removed.")
+                    await member.remove_roles(trole)
                     return
         else:
             self.bot.get_command('createrole')
@@ -90,7 +76,6 @@ class Admin(commands.Cog):
     async def errorhandler(self,ctx,error): # Error handlers need ctx and the error
         if isinstance(error,commands.CheckFailure): # Check for a specific error that is expected to pop up.
             await ctx.send("You're not my Master!") # Do something else instead of crashing
-
     @commands.command()
     @commands.has_role("gamer")
     async def kick(self,ctx,member : discord.Member,*,reason = None):#converts string member into the discord Member object
@@ -169,7 +154,6 @@ class Admin(commands.Cog):
     async def errorhandler(self,ctx,error):
         if isinstance(error,commands.CheckFailure):
             await ctx.send("You're not my Master!")
-        
 #setup done outside the class
 async def setup(bot):
     await bot.add_cog(Admin(bot))
