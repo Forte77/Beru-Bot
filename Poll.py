@@ -34,12 +34,14 @@ class Poll(commands.Cog):
         await msg.edit(embed = newEmbed)
         #before this point the message is not properly cached so we can not see the amount of emojis
         if remaining_time == 0:
+            self.poll_loop.stop()
             counts = []
             msg = discord.utils.get(self.bot.cached_messages, id = msg.id)
             reactions = msg.reactions
             for reaction in reactions: #going through all reactions and getting how many
                 counts.append(reaction.count)
             max_value = max(counts)
+            print(self.poll_loop.is_running())
             i = 0 
             for count in counts:
                 if count == max_value:
@@ -58,9 +60,13 @@ class Poll(commands.Cog):
                 else:
                     winner = options[max_index]
                     winEmoji = reactions[max_index]
-                    await ctx.send("Time's Up!")
+                    await ctx.send("## Time's Up!")
                     await ctx.send(f"{winEmoji.emoji} **{winner}** has won the Poll!")
-        self.poll_loop.stop()
+        
+    @poll.error
+    async def errorhandler(self,ctx,error):
+        if isinstance(error,commands.errors.BadArgument):
+            await ctx.send("The usage of this command was invalid. Reminder that the poll command goes like this:\n?poll [minutes] \"[Question in quotes]\" [options for the poll separated by spaces]\nIf your options are multiple words then put them in quotes and space them.")
 #setup done outside the class
 async def setup(bot):
     await bot.add_cog(Poll(bot))
