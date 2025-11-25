@@ -1,7 +1,7 @@
 #import discord library
 import discord
 import string
-with open('BotToken.txt','r') as file:
+with open("BotToken.txt",'r') as file:
     token = file.read()
 from discord.ext import commands
 intents = discord.Intents.default()
@@ -114,7 +114,7 @@ async def on_ready():
     await bot.load_extension("Cogs")
     await bot.load_extension("Events")
     await bot.load_extension("Misc")
-    await bot.load_extension("Music")
+    #await bot.load_extension("Music")
     await bot.load_extension("Battleship")
     await bot.load_extension("Poll")
     print("Beru has been summoned.") 
