@@ -12,4 +12,4 @@ class CogName(commands.Cog):
         self.bot = bot
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(CogName(bot))
+    bot.add_cog(CogName(bot))

@@ -180,4 +180,4 @@ class Battleship(commands.Cog):
             await ctx.send("You can only shoot at one coordinate at a time.")
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(Battleship(bot))
+    bot.add_cog(Battleship(bot))

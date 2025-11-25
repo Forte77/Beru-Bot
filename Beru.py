@@ -7,8 +7,9 @@ with open("BotToken.txt",'r') as file:
     own = lines[1]
     own = int(own)
     file.close()
-from nextcord import app_commands
+from nextcord import application_command
 from nextcord.ext import commands
+from nextcord.ext import application_checks
 intents = nextcord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix = "?", intents = intents,help_command=None)
@@ -27,7 +28,7 @@ async def ping(ctx): #Commmands use context parameter. I shortened to ctx
 @bot.group(aliases = ["about"],invoke_without_command=True)
 async def help(ctx):
         #Building the help command in an embed.
-        MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour.from_str(value= "#FFD700"))
+        MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour(0xFFD700))
         #settting the thumbnail for the embed to Zani
         MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
         #You can add 'inline = False' to make them display Vertically
@@ -43,22 +44,22 @@ async def help(ctx):
         await ctx.send(embed=MyEmbed)
 @help.command()
 async def alarm(ctx):
-    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?alarm [time] [reason for the alarm]\n You do not have to give a reason. The time must be formatted in hh:mm format(Military time). If you don't know what that means, if it it after noon then add 12 to the hour.")
     await ctx.send(embed=MyEmbed)
 @help.command()
 async def battleship(ctx):
-    MyEmbed = nextcord.Embed(title = "In-depth help for ?battleship", description = "Here is more info about the command.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?battleship", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?battleship [ping person to play with] [size of the board]\n If no size is given it will default to a 5x5. After the game begins you can use ?shoot and the coordinate you want to shoot at Ex:\n?shoot b3\nThe letter must go before the number.")
     await ctx.send(embed=MyEmbed)
 @help.command()
 async def choose4me(ctx):
-    MyEmbed = nextcord.Embed(title = "In-depth help for ?choose4me", description = "Here is more info about the command.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?choose4me", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?choose4me\nThis command prompts you to input your options. __DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the poll command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
     await ctx.send(embed=MyEmbed)
 @help.command()
 async def poll(ctx):
-    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?poll 5 \"Amber checks DMs\" yes no sometimes rarely\n This will create a 5 min poll with the title of *Amber checks DMs* with 4 different options. If one of your options contains more than one word it must be in quotations.\n__DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
     await ctx.send(embed=MyEmbed)
 #Help command for admin commands
@@ -66,7 +67,7 @@ async def poll(ctx):
 @commands.check(is_me)
 async def adminhelp(ctx): #Moved to Beru because the help subcommand edit was not working if it had the same name as the other edit group command in Admin. Moving it here lets them both have the same name
     #Building the help command in an embed.
-    MyEmbed = nextcord.Embed(title = "Admin Commands", description = "These are the available admin commands",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "Admin Commands", description = "These are the available admin commands",color = nextcord.Colour(0xFFD700))
     #settting the thumbnail for the embed to Zani
     MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
     #You can add 'inline = False' to make them display Vertically
@@ -79,7 +80,7 @@ async def adminhelp(ctx): #Moved to Beru because the help subcommand edit was no
     await ctx.send(embed=MyEmbed)
 @adminhelp.command()
 async def edit(ctx):
-    MyEmbed = nextcord.Embed(title = "Sub Commands", description = "These are the available sub commands and syntax",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "Sub Commands", description = "These are the available sub commands and syntax",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?edit [subcommand]\nEdit has multiple subcommands and does nothing by itself.",inline=False)
     MyEmbed.add_field(name= "servername:",value="?edit servername [new name]\nThis command changes the server's name to the input.",inline=False)
     MyEmbed.add_field(name= "createtextchannel:",value="?edit createtextchannel [channel name]\n his command creates a text channel with the name as input.",inline=False)
@@ -89,12 +90,12 @@ async def edit(ctx):
     await ctx.send(embed=MyEmbed)
 @adminhelp.command()
 async def purge(ctx):
-    MyEmbed = nextcord.Embed(title = "Purge command", description = "This is how to use the Purge command.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title = "Purge command", description = "This is how to use the Purge command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?purge [amount] [day] [month] [year]\nPurge command deletes a specified number of messages or all messages after a given date. If you purge by date input a / instead of the amount number. The date must be separated by spaces and in a dd mm yyyy format. Bot has limits so if everything is not deleted then use the command again.",inline=False)
     await ctx.send(embed=MyEmbed)
 @bot.command(aliases = ["contact","master"]) #Wanted to make a command to give contact info for me if I open this up to the public
 async def creator(ctx):
-    MyEmbed = nextcord.Embed(title="Contact Info",description= "Here is all thw ways you can reach me if there is a problem or you have questions about Beru.",color = nextcord.Colour.from_str(value= "#FFD700"))
+    MyEmbed = nextcord.Embed(title="Contact Info",description= "Here is all thw ways you can reach me if there is a problem or you have questions about Beru.",color = nextcord.Colour(0xFFD700))
     MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
     MyEmbed.add_field(name = "Email", value = "quantumforte7@gmail.com",inline=False)
     MyEmbed.add_field(name = "nextcord", value = "forte.exe_xx",inline = False)
@@ -122,34 +123,34 @@ async def errorhandler(ctx,error):
 @commands.check(is_me)
 async def refresh(ctx,cogname):
     try: #Slash commands
-        synced = await bot.tree.sync() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
+        synced = await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
     finally:
         print("Beru has been refreshed.")
+@bot.slash_command(name="hello")
+async def hello(interaction: nextcord.Interaction):
+    await interaction.response.send_message(f"Hey {interaction.user.mention}! This is a slash command!",ephemeral=True)
+@bot.slash_command(name="say",description="Tell Beru what to say.") #fun little thing for me to play around with
+#@application_(thing_to_say = "What should I say?")
+@application_checks.check(is_me)
+async def say(interaction: nextcord.Interaction, thing_to_say: str):
+    await interaction.response.send_message(f"{interaction.user.name} said: '{thing_to_say}'",ephemeral=False)
 @bot.event #bot.event IS a function. bot.command() CALLS a function
 async def on_ready():
-    await bot.load_extension("Admin")
-    await bot.load_extension("Cogs")
-    await bot.load_extension("Events")
-    await bot.load_extension("Misc")
-    #await bot.load_extension("Music")
-    await bot.load_extension("Battleship")
-    await bot.load_extension("Poll")
+    bot.load_extension("Admin")
+    bot.load_extension("Cogs")
+    bot.load_extension("Events")
+    bot.load_extension("Misc")
+    bot.load_extension("Music")
+    bot.load_extension("Battleship")
+    bot.load_extension("Poll")
     try: #Slash commands
-        synced = await bot.tree.sync() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
+        synced = await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
     finally:
         print("Beru has been summoned.")
-@bot.tree.command(name="hello")
-async def hello(interaction: nextcord.Interaction):
-    await interaction.response.send_message(f"Hey {interaction.user.mention}! This is a slash command!",ephemeral=True)
-@bot.tree.command(name="say") #fun little thing for me to play around with
-@app_commands.describe(thing_to_say = "What should I say?")
-@app_commands.check(is_me)
-async def say(interaction: nextcord.Interaction, thing_to_say: str):
-    await interaction.response.send_message(f"{interaction.user.name} said: '{thing_to_say}'",ephemeral=False)
 bot.run(token) 

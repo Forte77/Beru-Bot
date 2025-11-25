@@ -148,4 +148,4 @@ class Misc(commands.Cog):
         if isinstance(error,UnboundLocalError):
             await ctx.send("Invalid. Be better")
 async def setup(bot):
-    await bot.add_cog(Misc(bot))
+    bot.add_cog(Misc(bot))

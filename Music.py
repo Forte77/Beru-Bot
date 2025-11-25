@@ -52,4 +52,4 @@ class Music(commands.Cog):
         print("playing")
 #Setup
 async def setup(bot):
-    await bot.add_cog(Music(bot))
+    bot.add_cog(Music(bot))

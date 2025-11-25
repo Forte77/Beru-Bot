@@ -85,4 +85,4 @@ class Poll(commands.Cog):
             await ctx.send("The usage of this command was invalid. Reminder that the poll command goes like this:\n?poll [minutes] \"[Question in quotes]\" [options for the poll separated by spaces]\nIf your options are multiple words then put them in quotes and space them.")
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(Poll(bot))
+    bot.add_cog(Poll(bot))

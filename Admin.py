@@ -156,4 +156,4 @@ class Admin(commands.Cog):
             await ctx.send("You're not my Master!")
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(Admin(bot))
+    bot.add_cog(Admin(bot))

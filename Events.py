@@ -67,4 +67,4 @@ class Events(commands.Cog):
             await member.remove_roles(role)
     '''
 async def setup(bot):
-    await bot.add_cog(Events(bot))
+    bot.add_cog(Events(bot))
