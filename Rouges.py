@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 
 # To do. Nextcord(finish course) and then work on setting up chafe gaem.
 

@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 def is_me(ctx):
     return ctx.author.id == 300868241100636160
 #Cog Syntax:
@@ -17,7 +17,7 @@ class Poll(commands.Cog):
         if (self.poll_loop.is_running() == True):
             await ctx.send("There is already a poll running. Please wait...")
         elif len(options) == 0: # checking if there are options given and if not then assume a yes or no type.
-            pollEmbed = discord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Make embed
+            pollEmbed = nextcord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Make embed
             msg = await ctx.send(embed = pollEmbed)
             await msg.add_reaction("👍")
             await msg.add_reaction("👎")
@@ -26,7 +26,7 @@ class Poll(commands.Cog):
         elif len(options)>10:
             await ctx.send("Please try to limit your poll to 10 options")
         else:
-            pollEmbed = discord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Reminder that all embeds take a title & description
+            pollEmbed = nextcord.Embed(title = title, description = f"You have **{minutes}** minutes remaining!") # Reminder that all embeds take a title & description
             for number,option in enumerate(options): # enumerate returns the numbered index and the item
                     pollEmbed.add_field(name = f"{self.numbers[number]}", value = f"**{option}**", inline = False)
             msg = await ctx.send(embed = pollEmbed)
@@ -37,7 +37,7 @@ class Poll(commands.Cog):
     async def poll_loop(self, ctx, minutes, title, options, msg):
         count = self.poll_loop.current_loop
         remaining_time = minutes - count
-        newEmbed = discord.Embed(title = title, description = f"You have **{remaining_time}** minutes left!")
+        newEmbed = nextcord.Embed(title = title, description = f"You have **{remaining_time}** minutes left!")
         for number,option in enumerate(options): # enumerate returns the numbered index and the item
             newEmbed.add_field(name = f"{self.numbers[number]}", value = f"**{option}**", inline = False)
         await msg.edit(embed = newEmbed)
@@ -45,7 +45,7 @@ class Poll(commands.Cog):
         if remaining_time == 0:
             self.poll_loop.stop()
             counts = []
-            msg = discord.utils.get(self.bot.cached_messages, id = msg.id)
+            msg = nextcord.utils.get(self.bot.cached_messages, id = msg.id)
             reactions = msg.reactions
             for reaction in reactions: #going through all reactions and getting how many
                 counts.append(reaction.count)

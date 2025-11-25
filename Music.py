@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 import yt_dlp
 # Need a join, leave, play, pause, skip, queue, and maybe move command
 class Music(commands.Cog):
