@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 from datetime import datetime
 def is_me(ctx):
     return ctx.author.id == 300868241100636160
@@ -48,11 +48,11 @@ class Admin(commands.Cog):
         await ctx.guild.create_role(name = input)
         await ctx.send("The role has been created")
     @edit.command()
-    async def assignrole(self,ctx,member : discord.Member,*,input):
+    async def assignrole(self,ctx,member : nextcord.Member,*,input):
         role = input
         print(role)
         guild = self.bot.get_guild(member.guild.id)
-        trole = discord.utils.get(guild.roles, name = input) #checking each role in the server to see if the one we need to use has been made already
+        trole = nextcord.utils.get(guild.roles, name = input) #checking each role in the server to see if the one we need to use has been made already
         if not trole == None:
             rolename = trole.name
             print(trole.name+".\n")
@@ -70,7 +70,7 @@ class Admin(commands.Cog):
         else:
             self.bot.get_command('createrole')
             await self.createrole(ctx,input=input) #creates the role if not found
-            role = discord.utils.get(guild.roles, name = input)
+            role = nextcord.utils.get(guild.roles, name = input)
             await member.add_roles(role) #Then adds it to the user.
     @edit.error # Error handler. Syntax is @[command name].error
     async def errorhandler(self,ctx,error): # Error handlers need ctx and the error
@@ -78,7 +78,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not my Master!") # Do something else instead of crashing
     @commands.command()
     @commands.has_role("gamer")
-    async def kick(self,ctx,member : discord.Member,*,reason = None):#converts string member into the discord Member object
+    async def kick(self,ctx,member : nextcord.Member,*,reason = None):#converts string member into the nextcord Member object
         await ctx.guild.kick(member, reason = reason)
     @kick.error
     async def errorhandler(self,ctx,error):
@@ -86,7 +86,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command()
     @commands.has_role("gamer")
-    async def ban(self,ctx,member : discord.Member,*,reason = None):
+    async def ban(self,ctx,member : nextcord.Member,*,reason = None):
         await ctx.guild.ban(member, reason = reason)
         await ctx.send(member.name + " has been banned")
     @ban.error
@@ -95,7 +95,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command() #Mute user
     @commands.has_role("gamer")
-    async def mute(self,ctx,user : discord.Member):
+    async def mute(self,ctx,user : nextcord.Member):
         await user.edit(mute = True)
     @mute.error
     async def errorhandler(self,ctx,error):
@@ -103,7 +103,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command() #Unmute
     @commands.has_role("gamer")
-    async def unmute(self,ctx,user : discord.Member):
+    async def unmute(self,ctx,user : nextcord.Member):
         await user.edit(mute = False)
     @unmute.error
     async def errorhandler(self,ctx,error):
@@ -111,7 +111,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command() #Deafen
     @commands.has_role("gamer")
-    async def deafen(self,ctx,user : discord.Member):
+    async def deafen(self,ctx,user : nextcord.Member):
         await user.edit(mute = True)
     @deafen.error
     async def errorhandler(self,ctx,error):
@@ -119,7 +119,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command() #Undeafen command
     @commands.has_role("gamer")
-    async def undeafen(self,ctx,user : discord.Member):
+    async def undeafen(self,ctx,user : nextcord.Member):
         await user.edit(mute = False)
     @undeafen.error
     async def errorhandler(self,ctx,error):
@@ -127,7 +127,7 @@ class Admin(commands.Cog):
             await ctx.send("You're not approved by my Master!")
     @commands.command() #Kick from a VC
     @commands.has_role("gamer")
-    async def voicekick(self,ctx,user : discord.Member):
+    async def voicekick(self,ctx,user : nextcord.Member):
         await user.edit(voice_channel= None)
     @voicekick.error
     async def errorhandler(self,ctx,error):
@@ -137,7 +137,7 @@ class Admin(commands.Cog):
     @commands.check(is_me)
     async def unban(self,ctx,*,input):
         if "#" in input:
-            name, discriminator = input.split("#") #in case anyone is using an older style discord username
+            name, discriminator = input.split("#") #in case anyone is using an older style nextcord username
         else:
             name = input
             discriminator = None

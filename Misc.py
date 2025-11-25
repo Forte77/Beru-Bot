@@ -1,11 +1,11 @@
 import asyncio
-import discord
+import nextcord
 import random
 import string
-from discord.ext import commands
+from nextcord.ext import commands
 from datetime import datetime
-from discord.ext import tasks
-from discord.member import Member
+from nextcord.ext import tasks
+from nextcord.member import Member
 def is_me(ctx):
     return ctx.author.id == 300868241100636160
 class Misc(commands.Cog):
@@ -54,7 +54,7 @@ class Misc(commands.Cog):
     @commands.command()
     async def laugh(self,ctx):
         await ctx.channel.purge(limit = 1)
-        funnies = ["https://cdn.discordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
+        funnies = ["https://cdn.nextcordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
         link = random.randint(1,2)
         await ctx.channel.send(f"Here's something that might give you a laugh:\n"+funnies[link-1])
     @commands.check(is_me)
@@ -64,7 +64,7 @@ class Misc(commands.Cog):
         task = ["Japanese","Coding","Skyward"]
         japanese = ["Short quiz","Long quiz","Umi Lesson","Umi review"]
         review = ["review","speak","listen","blitz"]
-        coding = ["Lua","Discord Bot"]
+        coding = ["Lua","nextcord Bot"]
         work = random.choice(task)
         if work == "Skyward":
             await ctx.send("Your chosen task is: " + work +"\nGo start or continue whatever video course you were on.")
@@ -74,8 +74,8 @@ class Misc(commands.Cog):
             await ctx.send("https://www.udemy.com/home/my-courses/learning/")
             if work1 == "Lua":
                 await ctx.send("Do your Damn Lua Course\nDo it for Mega Man and Bass!!\nAt least get through one or two videos. You've gotta finish the course before you can make the Perfect Navi")
-            elif work1 == "Discord Bot":
-                await ctx.send("Continue the Discord Bot course.\nTry to get through a whole section today.")
+            elif work1 == "nextcord Bot":
+                await ctx.send("Continue the nextcord Bot course.\nTry to get through a whole section today.")
         elif work == "Japanese":
             work2 = random.choice(japanese)
             await ctx.send("Your chosen task is: " + work +" today!\n"+"Specifically doing a: "+work2)

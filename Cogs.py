@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 from datetime import datetime
 #Cog made while learning. MAY change the name of later.
 class MyCog(commands.Cog):
@@ -25,7 +25,7 @@ class MyCog(commands.Cog):
     async def task(self,ctx):
         await ctx.send("task")
     @commands.command()
-    async def hello(self,ctx,*,member : discord.Member = None):
+    async def hello(self,ctx,*,member : nextcord.Member = None):
         member = member or ctx.author
         if self._last_member is None or self._last_member.id != member.id:
             await ctx.send(f'Hello {member.name}~')

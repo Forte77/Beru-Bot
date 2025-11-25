@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 #Cog Syntax:
 class Battleship(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.
@@ -36,7 +36,7 @@ class Battleship(commands.Cog):
          #[':blue_square:',':blue_square:',':blue_square:',':blue_square:',':blue_square:'],
          #[':blue_square:',':blue_square:',':blue_square:',':blue_square:',':blue_square:'],]
     @commands.command()
-    async def battleship(self,ctx, player2 : discord.Member,ver : int = 5, hor : int = 5):
+    async def battleship(self,ctx, player2 : nextcord.Member,ver : int = 5, hor : int = 5):
         if self.playing == False: # using global variables. checking if a game is going
             if self.placed1 == False and self.placed2 == False:#checking if a game has started and placements haven't started.
                 self.playing = True

@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
-from discord.ext import tasks
-from discord.member import Member
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext import tasks
+from nextcord.member import Member
 from datetime import datetime
 class Events(commands.Cog):
     def __init__(self,bot):
@@ -19,7 +19,7 @@ class Events(commands.Cog):
             elif msg.content == "p" or msg.content == "P":
                 await msg.channel.send("Shut up Blizzerd")
             elif msg.content == "timezone":
-                await msg.channel.send("[Timezone helper](https://discordtools.io/timestamp)")
+                await msg.channel.send("[Timezone helper](https://nextcordtools.io/timestamp)")
     #When a member joins the server the bot wll DM them.
     @commands.Cog.listener()
     async def on_member_join(self,member):
@@ -37,10 +37,10 @@ class Events(commands.Cog):
         guild = self.bot.get_guild(guild_id)
         # if statement to confirm emoji and message that is reacted to. google and copy exact emoji.
         if emoji == "🎮" and message_id == 1429934331115212841:
-            role = discord.utils.get(guild.roles, name = "gamer")
+            role = nextcord.utils.get(guild.roles, name = "gamer")
             await member.add_roles(role)
         if emoji == "📓" and message_id == 1429934331115212841:
-            role = discord.utils.get(guild.roles, name = "QA")
+            role = nextcord.utils.get(guild.roles, name = "QA")
             await member.add_roles(role)
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self,payload):
@@ -56,14 +56,14 @@ class Events(commands.Cog):
             # Member not found in cache, try fetching
             try:
                 member = await guild.fetch_member(user_id)
-            except discord.NotFound:
+            except nextcord.NotFound:
                 # Member not found in the guild
                 return
         if emoji == "🎮" and message_id == 1429934331115212841:
-            role = discord.utils.get(guild.roles, name = "gamer")
+            role = nextcord.utils.get(guild.roles, name = "gamer")
             await member.remove_roles(role)
         if emoji == "📓" and message_id == 1429934331115212841:
-            role = discord.utils.get(guild.roles, name = "QA")
+            role = nextcord.utils.get(guild.roles, name = "QA")
             await member.remove_roles(role)
     '''
 async def setup(bot):
