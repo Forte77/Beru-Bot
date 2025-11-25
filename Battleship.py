@@ -153,10 +153,12 @@ class Battleship(commands.Cog):
                         if ctx.author == self.player1:
                             await self.player1.send("You have won the battle!")
                             await self.player2.send("You have lost the battle.")
+                            await self.render(self.player1,self.board2)
                             await self.render(self.player2,self.board1)
                         if ctx.author == self.player2:
                             await self.player2.send("You have won the battle!")
                             await self.player1.send("You have lost the battle.")
+                            await self.render(self.player2,self.board1)
                             await self.render(self.player1,self.board2)
             else:
                 await ctx.send("Please start a game of battleship first. Use ?battleship @member [x] [y]")            
