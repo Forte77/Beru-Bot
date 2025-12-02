@@ -1,5 +1,6 @@
 import nextcord
 from nextcord.ext import commands
+from nextcord import application_command
 #Cog Syntax:
 class Battleship(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.

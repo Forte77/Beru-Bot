@@ -1,15 +1,16 @@
 #import nextcord library
 import nextcord
 import string
+from nextcord import application_command
+from nextcord.ext import commands
+from nextcord.ext import application_checks
+from nextcord import Interaction
 with open("BotToken.txt",'r') as file:
     lines = file.readlines() #added my id to the bottoken text
     token = lines[0]
     own = lines[1]
     own = int(own)
     file.close()
-from nextcord import application_command
-from nextcord.ext import commands
-from nextcord.ext import application_checks
 intents = nextcord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix = "?", intents = intents,help_command=None)
@@ -26,7 +27,7 @@ async def ping(ctx): #Commmands use context parameter. I shortened to ctx
     await ctx.send("Pong!")
 #Help/About command
 @bot.group(aliases = ["about"],invoke_without_command=True)
-async def help(ctx):
+async def help(ctx:commands.Context):
         #Building the help command in an embed.
         MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour(0xFFD700))
         #settting the thumbnail for the embed to Zani
@@ -42,23 +43,23 @@ async def help(ctx):
         MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers. You must type rock paper or scissors as a response.",inline = False)
         #Send embed that was built.
         await ctx.send(embed=MyEmbed)
-@help.command()
-async def alarm(ctx):
+@help.command(name="alarm",description="More help with the alarm command")
+async def alarm(ctx:commands.Context):
     MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?alarm [time] [reason for the alarm]\n You do not have to give a reason. The time must be formatted in hh:mm format(Military time). If you don't know what that means, if it it after noon then add 12 to the hour.")
     await ctx.send(embed=MyEmbed)
-@help.command()
-async def battleship(ctx):
+@help.command(name="battleship",description="More help with the battleship command")
+async def battleship(ctx:commands.Context):
     MyEmbed = nextcord.Embed(title = "In-depth help for ?battleship", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?battleship [ping person to play with] [size of the board]\n If no size is given it will default to a 5x5. After the game begins you can use ?shoot and the coordinate you want to shoot at Ex:\n?shoot b3\nThe letter must go before the number.")
     await ctx.send(embed=MyEmbed)
-@help.command()
-async def choose4me(ctx):
+@help.command(name="choose4me",description="More help with the chooose4me command")
+async def choose4me(ctx:commands.Context):
     MyEmbed = nextcord.Embed(title = "In-depth help for ?choose4me", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?choose4me\nThis command prompts you to input your options. __DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the poll command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
     await ctx.send(embed=MyEmbed)
-@help.command()
-async def poll(ctx):
+@help.command(name="poll",description="More help with the poll command")
+async def poll(ctx:commands.Context):
     MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
     MyEmbed.add_field(name= "Syntax:",value="?poll 5 \"Amber checks DMs\" yes no sometimes rarely\n This will create a 5 min poll with the title of *Amber checks DMs* with 4 different options. If one of your options contains more than one word it must be in quotations.\n__DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
     await ctx.send(embed=MyEmbed)
@@ -121,22 +122,58 @@ async def errorhandler(ctx,error):
             await ctx.send("You're not my Master!")
 @bot.command() # Reload slash commands
 @commands.check(is_me)
-async def refresh(ctx,cogname):
+async def refresh(ctx): #Doing this on_ready uses up rate limit for the API
     try: #Slash commands
-        synced = await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
-        print(f"Synced {len(synced)} command(s)")
+        await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
+        print(f"Command(s) have been synced")
     except Exception as e:
         print(e)
     finally:
         print("Beru has been refreshed.")
-@bot.slash_command(name="hello")
-async def hello(interaction: nextcord.Interaction):
-    await interaction.response.send_message(f"Hey {interaction.user.mention}! This is a slash command!",ephemeral=True)
+@bot.slash_command(name="hello",description="Have Beru say hellow to you.")
+async def hello(interaction:nextcord.Interaction):
+    await interaction.response.send_message(f"Hey {interaction.user.mention}!",ephemeral=True)
 @bot.slash_command(name="say",description="Tell Beru what to say.") #fun little thing for me to play around with
-#@application_(thing_to_say = "What should I say?")
 @application_checks.check(is_me)
-async def say(interaction: nextcord.Interaction, thing_to_say: str):
+async def say(interaction:nextcord.Interaction,thing_to_say:str):
     await interaction.response.send_message(f"{interaction.user.name} said: '{thing_to_say}'",ephemeral=False)
+@bot.slash_command(name="help", description="Slash command version of the help command")
+async def help(interaction: nextcord.Interaction):
+    #Building the help command in an embed.
+    MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour(0xFFD700))
+    #Settting the thumbnail for the embed to Zani
+    MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
+    #You can add 'inline = False' to make them display Vertically
+    MyEmbed.add_field(name = "?alarm", value = "This command sets an alarm for a given time(24h) for only one server member at a time.",inline = False)
+    MyEmbed.add_field(name = "?battleship", value = "Start a game of battleship with another member. You can also choose the vertical and horizontal dimensions of the board. Ex: \n?battleship @friendo 5 5",inline = False)
+    MyEmbed.add_field(name = "?choose4me", value = "This command will randomly select from a list of things. Activate the command and then put in the options one by one",inline = False)
+    MyEmbed.add_field(name = "?creator", value = "Just pulls up contact information",inline = False)
+    MyEmbed.add_field(name = "?luck", value = "This command flips a coin 3 times",inline = False)
+    MyEmbed.add_field(name = "?ping", value = "This command replies back with Pong when used",inline = False)
+    MyEmbed.add_field(name = "?poll", value = "This command creates a poll for [x] amount of minutes with the tile and options given.",inline = False)
+    MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers. You must type rock paper or scissors as a response.",inline = False)
+    #Send embed that was built.
+    await interaction.response.send_message(embed=MyEmbed)
+'''@help.subcommand(name="alarm",description="More in-depth help on the alarm command")
+async def alarm(interaction: nextcord.Interaction):
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
+    MyEmbed.add_field(name= "Syntax:",value="?alarm [time] [reason for the alarm]\n You do not have to give a reason. The time must be formatted in hh:mm format(Military time). If you don't know what that means, if it it after noon then add 12 to the hour.")
+    await interaction.response.send_message(embed=MyEmbed)
+@help.subcommand(name="battleship",description="More in-depth help on the battleship command")
+async def battleship(interaction: nextcord.Interaction):
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?battleship", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
+    MyEmbed.add_field(name= "Syntax:",value="?battleship [ping person to play with] [size of the board]\n If no size is given it will default to a 5x5. After the game begins you can use ?shoot and the coordinate you want to shoot at Ex:\n?shoot b3\nThe letter must go before the number.")
+    await interaction.response.send_message(embed=MyEmbed)
+@help.subcommand(name="choose4me",description="More in-depth help on the choose4me command")
+async def choose4me(interaction: nextcord.Interaction):
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?choose4me", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
+    MyEmbed.add_field(name= "Syntax:",value="?choose4me\nThis command prompts you to input your options. __DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the poll command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
+    await interaction.response.send_message(embed=MyEmbed)
+@help.subcommand(name="poll",description="More in-depth help on the poll command")
+async def poll(interaction: nextcord.Interaction):
+    MyEmbed = nextcord.Embed(title = "In-depth help for ?alarm", description = "Here is more info about the command.",color = nextcord.Colour(0xFFD700))
+    MyEmbed.add_field(name= "Syntax:",value="?poll 5 \"Amber checks DMs\" yes no sometimes rarely\n This will create a 5 min poll with the title of *Amber checks DMs* with 4 different options. If one of your options contains more than one word it must be in quotations.\n__DO NOT__ put any of your options surrounded by more or less than one \" on each side. This breaks the command and just doesn't work. I have no idea why, I could not fix it. Fuck Zytos.")
+    await interaction.response.send_message(embed=MyEmbed)'''
 @bot.event #bot.event IS a function. bot.command() CALLS a function
 async def on_ready():
     bot.load_extension("Admin")
@@ -146,11 +183,5 @@ async def on_ready():
     bot.load_extension("Music")
     bot.load_extension("Battleship")
     bot.load_extension("Poll")
-    try: #Slash commands
-        synced = await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
-        print(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print(e)
-    finally:
-        print("Beru has been summoned.")
+    print("Beru has been summoned")
 bot.run(token) 
