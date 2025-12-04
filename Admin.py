@@ -3,8 +3,14 @@ from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
 from datetime import datetime
-def is_me(ctx):
-    return ctx.author.id == 300868241100636160
+from Beru import own
+def is_me(arg):
+        if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
+            intauth = arg.user.id
+            return intauth  == own
+        else:
+            auth = arg.author.id
+            return auth  == own
 class Admin(commands.Cog):
     #initialize Admin class
     def __init__(self,bot): #not async
@@ -156,4 +162,4 @@ class Admin(commands.Cog):
             await ctx.send("You're not my Master!")
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(Admin(bot))
+    bot.add_cog(Admin(bot))

@@ -2,8 +2,14 @@ import nextcord
 from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
-def is_me(ctx):
-    return ctx.author.id == 300868241100636160
+from Beru import own
+def is_me(arg):
+        if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
+            intauth = arg.user.id
+            return intauth  == own
+        else:
+            auth = arg.author.id
+            return auth  == own
 #Cog Syntax:
 class Poll(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.
