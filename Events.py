@@ -3,6 +3,19 @@ from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
 from datetime import datetime
+with open("BotToken.txt",'r') as file:
+    lines = file.readlines() #added my id to the bottoken text
+    token = lines[0]
+    own = lines[1]
+    own = int(own)
+#Coding commands not event. Command decorator calls a function. Event itself is a function
+async def is_me(arg):
+        if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
+            intauth = arg.user.id
+            return intauth == own
+        else:
+            auth = arg.author.id
+            return auth == own
 class Events(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
@@ -67,4 +80,4 @@ class Events(commands.Cog):
             await member.remove_roles(role)
     '''
 async def setup(bot):
-    await bot.add_cog(Events(bot))
+    bot.add_cog(Events(bot))

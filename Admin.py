@@ -3,14 +3,18 @@ from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
 from datetime import datetime
-from Beru import own
-def is_me(arg):
+with open("BotToken.txt",'r') as file:
+    lines = file.readlines() #added my id to the bottoken text
+    token = lines[0]
+    own = lines[1]
+    own = int(own)
+async def is_me(arg):
         if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
             intauth = arg.user.id
-            return intauth  == own
+            return intauth == own
         else:
             auth = arg.author.id
-            return auth  == own
+            return auth == own
 class Admin(commands.Cog):
     #initialize Admin class
     def __init__(self,bot): #not async

@@ -2,14 +2,19 @@ import nextcord
 from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
-from Beru import own
-def is_me(arg):
+with open("BotToken.txt",'r') as file:
+    lines = file.readlines() #added my id to the bottoken text
+    token = lines[0]
+    own = lines[1]
+    own = int(own)
+#Coding commands not event. Command decorator calls a function. Event itself is a function
+async def is_me(arg):
         if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
             intauth = arg.user.id
-            return intauth  == own
+            return intauth == own
         else:
             auth = arg.author.id
-            return auth  == own
+            return auth == own
 #Cog Syntax:
 class Poll(commands.Cog):
     #initialize MyCog class..Don't have to redo bot and intents stuff.
@@ -77,7 +82,7 @@ class Poll(commands.Cog):
                     await ctx.send("## Time's Up!")
                     await ctx.send(f"{winEmoji.emoji} **{winner}** has won the Poll!")
     @commands.command()
-    @commands.check(is_me)
+    #@commands.check(is_me)
     async def stopPoll(self,ctx):
         self.poll_loop.cancel()
         await ctx.send("Poll timer has been stopped. You may now start another poll.")
@@ -91,4 +96,4 @@ class Poll(commands.Cog):
             await ctx.send("The usage of this command was invalid. Reminder that the poll command goes like this:\n?poll [minutes] \"[Question in quotes]\" [options for the poll separated by spaces]\nIf your options are multiple words then put them in quotes and space them.")
 #setup done outside the class
 async def setup(bot):
-    await bot.add_cog(Poll(bot))
+    bot.add_cog(Poll(bot))

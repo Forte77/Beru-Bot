@@ -3,6 +3,19 @@ from nextcord.ext import commands
 from nextcord.ext import tasks
 from nextcord.member import Member
 from datetime import datetime
+with open("BotToken.txt",'r') as file:
+    lines = file.readlines() #added my id to the bottoken text
+    token = lines[0]
+    own = lines[1]
+    own = int(own)
+#Coding commands not event. Command decorator calls a function. Event itself is a function
+async def is_me(arg):
+        if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
+            intauth = arg.user.id
+            return intauth == own
+        else:
+            auth = arg.author.id
+            return auth == own
 #Cog made while learning. MAY change the name of later.
 class MyCog(commands.Cog):
     #initialize MyCog class
@@ -64,4 +77,4 @@ class MyCog(commands.Cog):
     async def stop(self,ctx):
         self.task.stop()    
 async def setup(bot):
-    await bot.add_cog(MyCog(bot))
+    bot.add_cog(MyCog(bot))

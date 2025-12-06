@@ -5,17 +5,16 @@ from nextcord import application_command
 from nextcord.ext import commands
 from nextcord.ext import application_checks
 from nextcord import Interaction
+intents = nextcord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix = "?", intents = intents,help_command=None)
 with open("BotToken.txt",'r') as file:
     lines = file.readlines() #added my id to the bottoken text
     token = lines[0]
     own = lines[1]
     own = int(own)
-    file.close()
-intents = nextcord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix = "?", intents = intents,help_command=None)
 #Coding commands not event. Command decorator calls a function. Event itself is a function
-def is_me(arg):
+async def is_me(arg):
         if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
             intauth = arg.user.id
             return intauth == own
@@ -23,7 +22,7 @@ def is_me(arg):
             auth = arg.author.id
             return auth == own
 @bot.command() #ping command
-async def ping(ctx): #Commmands use context parameter. I shortened to ctx
+async def ping(ctx): #Commmands use context parameter. Shortened to ctx
     await ctx.send("Pong!")
 #Help/About command
 @bot.group(aliases = ["about"],invoke_without_command=True)
@@ -183,8 +182,8 @@ async def on_ready():
     bot.load_extension("Cogs")
     bot.load_extension("Events")
     bot.load_extension("Misc")
-    bot.load_extension("Music")
     bot.load_extension("Battleship")
     bot.load_extension("Poll")
+    bot.load_extension("Rogues")
     print("Beru has been summoned")
 bot.run(token) 
