@@ -6,8 +6,19 @@ from nextcord.ext import commands
 from datetime import datetime
 from nextcord.ext import tasks
 from nextcord.member import Member
-def is_me(ctx):
-    return ctx.author.id == 300868241100636160
+with open("BotToken.txt",'r') as file:
+    lines = file.readlines() #added my id to the bottoken text
+    token = lines[0]
+    own = lines[1]
+    own = int(own)
+#Coding commands not event. Command decorator calls a function. Event itself is a function
+async def is_me(arg):
+        if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
+            intauth = arg.user.id
+            return intauth == own
+        else:
+            auth = arg.author.id
+            return auth == own
 class Misc(commands.Cog):
     def __init__(self,bot): #not async
         self.bot = bot
@@ -57,7 +68,7 @@ class Misc(commands.Cog):
         funnies = ["https://cdn.nextcordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
         link = random.randint(1,2)
         await ctx.channel.send(f"Here's something that might give you a laugh:\n"+funnies[link-1])
-    @commands.check(is_me)
+#    @commands.check(is_me)
     @commands.command() # command for my own use lol
     async def justdoit(self,ctx):
         await ctx.channel.purge(limit = 1)
