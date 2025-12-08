@@ -32,10 +32,10 @@ class Rogues(commands.Cog):
     def Deck(self): #create the "deck" of scrolls for the dungeon
         #gotta finish scroll class first
         print("Creating Deck")
-        self.createScroll("Wish","Ancillary",False,False,False,6,"") # TBD
-        self.createScroll("Za Warudo","Ancillary",False,False,False,6,"") # when prompting defensive scrolls need to also check for this.
-        self.createScroll("Soul Knot","Ancillary",False,False,False,6,"") # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
-        self.createScroll("Holy Shield","Defensive",False,False,False,6,"") # Super Strong long lasting shield. numbers will be worked out later
+        self.createScroll("Wish","Ancillary",False,False,False,1,"") # TBD
+        self.createScroll("Za Warudo","Ancillary",False,False,False,1,"") # when prompting defensive scrolls need to also check for this.
+        self.createScroll("Soul Knot","Ancillary",False,False,False,1,"") # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
+        self.createScroll("Holy Shield","Defensive",False,False,False,1,"") # Super Strong long lasting shield. numbers will be worked out later
         self.createScroll("Teleport","Defensive",False,False,False,6,"") # 6 teleport scrolls it can not be countered blocked or avoided (it's an attack or aimed at anyone)
         self.createScroll("Fireball","Offensive",True,True,True,7,"") # 7 Fireball can be countered blocked and avoided
         self.createScroll("Counter","Defensive",False,True,True,7,"") # Counter spell can be blocked and avoided but not countered
