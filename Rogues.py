@@ -72,7 +72,6 @@ class Rogues(commands.Cog):
         if ready == True:
             ctx.send("No deck to print")
             return
-        sn = 0
         for i in deck:
             i.toPrint()
         #I'm thinking use deck command to make each scroll and the scroll class takes the variables to initialize them
@@ -96,12 +95,13 @@ class Rogues(commands.Cog):
 class Player:
     name="player"
     uid=1
-    health = 3
+    hp = 3
     shield = 0
-    prevRoom = None
-    nextRoom = None
+    pRoom = None
+    nRoom = None
     hand = [None,None,None,None,None] # Players can hold a max of 5 scrolls
     Rogue = False
+    done = False
     mem = nextcord.Member
     reacting = False
     def __init__(self,interaction:nextcord.Interaction):
@@ -149,7 +149,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.count = count
         self.flavor = flavor
     def toPrint(self):
-        print(f"{self.scrollName} of type: {self.scrollType} copy number: {self.copy} There are {self.count} total in the deck")
+        print(f"{self.scrollName}. Type: {self.scrollType}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
     async def action(self,interaction:nextcord.Interaction,target:None,target2:None):
         match self.scrollName:
             case "Teleport":
