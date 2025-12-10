@@ -296,6 +296,36 @@ class Rogues(commands.Cog):
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
             await ctx.send("There isn't a game happening right now.")
+    def damage(self,victim):
+        if victim.shield>0:
+            victim.shield-=1
+            victim.mem.send(f"You have taken damage that was blocked by one of your shields.")
+        else:
+            victim.hp-=1
+            victim.mem.send(f"You have taken damage.")
+    #@tasks.loop(seconds=1)
+    async def react(self,interaction,victim):
+        #count = self.react.current_loop
+        #remaining = 45 - count
+        try:
+            msg = await self.bot.wait_for('message',timeout=45.0) # Wait 45 seconds
+            #@Rogues.event
+            #async def on_message(self,message):
+            for i in victim.hand:
+                if msg.content == i.scrollName:
+                    print("reacted")
+                    victim.use(interaction,i)
+        except asyncio.TimeoutError:
+            await victim.mem.send(f"RIP")
+            await victim.mem.send(f"You failed to react in time.")
+            self.damage(victim)            
+        else:
+            print("test")
+#        if remaining ==0:
+ #           self.react.stop()
+  #          victim.mem.send(f"You failed to react in time.")
+   #         self.damage(victim)
+            return
        
 class Player:
     name="player"
@@ -378,6 +408,26 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 print(f"{interaction.user} casted {self.scrollName}")
             case "Fireball":
                 print(f"{interaction.user} casted {self.scrollName}")
+                if target != None:
+                    caster = Rogues.identify(Rogues,interaction.user)
+                    victim = Rogues.identify(Rogues,target)
+                    await target.send(f"You are being targetted by {caster.name} who casted {self.scrollName}.\nYou have 45 seconds to react if you have any defensive scrolls that can save you.")
+                    for i in victim.hand:
+                        if i.scrollType == "Defensive" or i.scrollName == "Za Warudo":
+                            await target.send(f"You have at least one scroll in your hand that can be used to save you from this spell.")
+                        else:
+                            await target.send(f"You have no scrolls that can save you from this spell. Big rip")
+                            Rogues.damage(victim)
+                    if Rogues.react.is_running():
+                        await caster.send(f"{victim.name} is already being attacked and is currently reacting to another spell. Give them a moment to think they are safe(max 45 sec). Then you can try again.")
+                    else:
+                        await interaction.send(f"{caster.name} casted {self.scrollName} at {victim.name}")
+                        caster.hand.remove(self)
+                        victim.reacting = True
+                        Rogues.react.start(interaction,victim)
+                else: # if there's no target
+                    print("fail")
+                    await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
             case "Counter":
                 print(f"{interaction.user} casted {self.scrollName}")
             case "Mold Earth":
@@ -440,7 +490,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     if healer.reacting==True:
                         return
                     healer.turnDone = True
-                else:
+                else: # if there's no target
                     print("fail")
                     await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
             case "Eldritch Blast":
