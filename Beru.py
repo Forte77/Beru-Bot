@@ -75,7 +75,7 @@ async def adminhelp(ctx): #Moved to Beru because the help subcommand edit was no
     MyEmbed.add_field(name = "?kick", value = "This command kicks the user",inline = False)
     MyEmbed.add_field(name = "?ban", value = "This command bans the user",inline = False)
     MyEmbed.add_field(name = "?purge", value = "This command purge's message by either amount or after a certain date. [dd mm yyyy]. For more in-depth help type __?adminhelp purge__")
-    #MyEmbed.add_field(name = "?", value = "This command ",inline = False)
+    #MyEmbed.add_field(name = "?", value = "This command ",inline = False) keeping for copy and paste lol
     #Send embed that was built.
     await ctx.send(embed=MyEmbed)
 @adminhelp.command()
@@ -136,6 +136,10 @@ async def hello(interaction:nextcord.Interaction):
 @application_checks.check(is_me)
 async def say(interaction:nextcord.Interaction,thing_to_say:str):
     await interaction.response.send_message(f"{interaction.user.name} said: '{thing_to_say}'",ephemeral=False)
+@say.error
+async def errorhandler(ctx:nextcord.Interaction,error):
+        if isinstance(error,nextcord.errors.ApplicationCheckFailure):
+            await ctx.send("You're not my Master!")
 @bot.slash_command(name="botcommands",description="Gives info about each of the commands")
 async def botcommands(interaction:nextcord.Interaction):
     #Building the help command in an embed.

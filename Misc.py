@@ -35,7 +35,6 @@ class Misc(commands.Cog):
             print (i)
             if done:
                 continue
-        print("tested")
         await ctx.channel.purge(limit = i*2)
         opt = random.randint(1,i) # Randomize choices
         pick = options[opt-1] # Get the choice that was at that random selection.
@@ -68,8 +67,8 @@ class Misc(commands.Cog):
         funnies = ["https://cdn.nextcordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
         link = random.randint(1,2)
         await ctx.channel.send(f"Here's something that might give you a laugh:\n"+funnies[link-1])
-#    @commands.check(is_me)
     @commands.command() # command for my own use lol
+    @commands.check(is_me)
     async def justdoit(self,ctx):
         await ctx.channel.purge(limit = 1)
         task = ["Japanese","Coding","Skyward"]
