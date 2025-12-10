@@ -113,7 +113,8 @@ async def errorhandler(ctx,error):
 @bot.command() # to reload an extension. can be used when when bot is already running
 @commands.check(is_me)
 async def reload(ctx,cogname):
-    await bot.reload_extension(cogname)
+    print("Reload?")
+    bot.reload_extension(cogname)
     await ctx.send("Cog has been __Tactically__ Reloaded")
 @reload.error
 async def errorhandler(ctx,error):

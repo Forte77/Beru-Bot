@@ -26,7 +26,7 @@ deck = []
 evil = False
 players = []
 # Need a function to check if there is a game running already
-def ongoing(ready):
+async def ongoing(interaction:nextcord.Interaction):
     return ready == False
 class Rogues(commands.Cog):
     def __init__(self,bot):
@@ -39,6 +39,7 @@ class Rogues(commands.Cog):
             print(f"Category {category.name} created successfully!")
             global safeRoom
             safeRoom = await guild.create_text_channel(name="safe-room",category=category,position=0,topic="Room for the party to discuss and make decisions",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)})
+            await interaction.send(f"You may now assemble in the {safeRoom.mention}")
             await safeRoom.send("This looks like a safe spot.")
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
@@ -80,6 +81,10 @@ class Rogues(commands.Cog):
                 players.append(player8)
             case _:
                 print("too many players")
+    def identify(self,player:nextcord.Member): #function to identify discord Member to Player class counterpart
+        for i in players:
+            if player == i.mem:
+                return i
     def Deck(self): #create the "deck" of scrolls for the dungeon
         print("Creating Deck")
         self.createScroll("Wish","Ancillary",False,False,False,1,"") # TBD
@@ -117,11 +122,27 @@ class Rogues(commands.Cog):
     def serialize(self,scroll,sn):
         scroll.serial = sn
     def deal(self, player):
-        print(f"Dealing to {player.name}:\n")
+        print(f"Dealing to {player.name}:")
         for i in range(0,3): # Deal 3 scrolls at the start of the game
             dealt = random.choice(deck) # randomly pick a scroll
             deck.remove(dealt) # remove the scroll from the deck
             player.addScroll(dealt) # add the scroll to the player's hand
+    @commands.command()
+    @commands.check(is_me)
+    async def loot(self,ctx,test:str = None,player2:nextcord.Member=None):
+        player = self.identify(ctx.author)
+        if player2 != None:
+            player2 = self.identify(player2)
+            #player2.hp = 3
+            #print(f"{player2.name}'s health has been set to 3")
+        if test !=None:
+            dealt = deck[len(deck)-1]
+            deck.remove(dealt)
+            player.addScroll(dealt)
+        else:
+            dealt = random.choice(deck)
+            deck.remove(dealt)
+            player.addScroll(dealt)
     @commands.command()
     @commands.check(is_me)
     async def printDeck(self,ctx):
@@ -130,6 +151,10 @@ class Rogues(commands.Cog):
             return
         for i in deck:
             i.toPrint()
+    @printDeck.error
+    async def errorhandler(ctx:nextcord.Interaction,error):
+        if isinstance(error,nextcord.errors.ApplicationCheckFailure):
+            await ctx.send("You're not my Master!")
         #I'm thinking use deck command to make each scroll and the scroll class takes the variables to initialize them
     
     @nextcord.slash_command(name="rogues",description="Start the game and select the players")
@@ -165,7 +190,7 @@ class Rogues(commands.Cog):
             everyone = guild.default_role
             j=1
             for i in people:
-                print(f"people? {people[j-1].name} {i}")
+                print(i)
                 await self.addPlayer(i,j)
                 j+=1
         await interaction.send("Setting up Game...")
@@ -178,8 +203,9 @@ class Rogues(commands.Cog):
         for i in players:
             self.deal(i)
 
-    @nextcord.slash_command(name="cleared",description="End the game")
+    @nextcord.slash_command(name="teardown",description="End the game")
     @application_checks.check(is_me)
+    @application_checks.check(ongoing)
     async def teardown(self,interaction:nextcord.Interaction):
         global ready
         ready = True # set the ready check to false since the game has started
@@ -188,62 +214,54 @@ class Rogues(commands.Cog):
         await safeRoom.delete()
         await safeVC.delete()
         await category.delete()
-    #@application_checks.check(ongoing)
-    '''@nextcord.slash_command(name="player",description="Player commands during the game")
+        deck.clear()
+        for i in players:
+            i.hand.clear()
+        players.clear()
+        print("GAME OVER")
+    @teardown.error
+    async def errorhandler(ctx:nextcord.Interaction,error):
+        if isinstance(error,nextcord.errors.ApplicationCheckFailure):
+            await ctx.send("You're not my Master!")
+    @application_checks.check(ongoing)
+    @nextcord.slash_command(name="player",description="Player commands during the game")
     async def player(self,interaction:nextcord.Interaction):
         pass
     @player.subcommand(description="Use one of your scrolls")
-    async def use(self,interaction:nextcord.Interaction,scroll,target:None,target2:None):
+    #@nextcord.slash_command(name="cast",description="Use one of your scrolls")
+    async def cast(self,interaction:nextcord.Interaction,scroll:str,target:nextcord.Member = None,target2:nextcord.Member = None):
+        player = self.identify(interaction.user)
         if target != None and target2 == None:
-            scroll.action(target)
+            await player.use(interaction,scroll,target)
         elif target2 != None:
-            scroll.action(target,target2)
+            await player.use(interaction,scroll,target,target2)
         else:
-            scroll.action()
-        await interaction.response.send_message("done")
+            await player.use(interaction,scroll)
+        return
     @player.subcommand(description="Show another player one of your scrolls")
-    async def show(self,interaction:nextcord.Interaction,scroll,target:None):
+    async def show(self,interaction:nextcord.Interaction,scroll:str,target:nextcord.Member=None):
         print("Player is showing their scroll.")
-        await interaction.response.send_message("done")
-    @player.subcommand(description="Duel another player")
-    async def duel(self,interaction:nextcord.Interaction,target):
+        player = self.identify(interaction.user)
+        for i in player.hand:
+            if i.scrollName == scroll and target==None:
+                await interaction.response.send_message(f"{player.name} has a {scroll} scroll")
+                return
+            elif i.scrollName == scroll and target!=None:
+                await target.send(f"{player.name} shows you that they own a {scroll} scroll")
+                return
+        await interaction.response.send_message(f"You do not have a {scroll} scroll")
+    '''@player.subcommand(description="Duel another player")
+    async def duel(self,interaction:nextcord.Interaction,target:nextcord.Member=None):
         print("Player wants to duel")
         await interaction.response.send_message("done")'''
-    '''@player.subcommand(description="Display your stats")
-    async def stats(self,interaction:nextcord.Interaction):
-        i=0
-        while i < self.hp:
-            self.hpDis = self.hpDis + ":heart:"
-            i+=1
-        i=0
-        if self.shield ==0: self.shieldDis = "None" 
-        else: self.shieldDis = ""
-        while i < self.shield:
-            self.shieldDis = self.shieldDis + ":blue_heart:"
-            i+=1
-        i=0
-        if len(self.hand)==0: self.handDis = "You have no scrolls. I'm suprised you're even still alive."
-        while i < len(self.hand):
-            self.handDis = f"{self.handDis} {self.hand[i].scrollName} a(n) {self.hand[i].scrollType} type of spell"
-            i+=1
-            if i == len(self.hand):
-                self.handDis = self.handDis + "."
-            else:
-                self.handDis = self.handDis + ","
-        MyEmbed = nextcord.Embed(title = self.name, description = "These your stats",color = nextcord.Colour(0xFFD700))
-        MyEmbed.add_field(name="HP", value = self.hpDis,inline=True)
-        MyEmbed.add_field(name="Shields", value=self.shieldDis,inline=True)
-        MyEmbed.add_field(name="PlayerID",value=self.uid,inline=True)
-        if self.Rogue:
-            MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
-        MyEmbed.add_field(name="Owned Scrolls",value=self.handDis,inline=False)
-        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)'''
-    @nextcord.slash_command(name="stats",description="your stats")
+    @player.subcommand(description="Display your stats")
+    #@nextcord.slash_command(name="stats",description="your stats")
     async def stats(self,interaction:nextcord.Interaction):
         current=None
-        for i in players:
-            if interaction.user == i.mem:
-                current = i
+        current = self.identify(interaction.user)
+        current.hpDis = ""
+        current.shieldDis = "None"
+        current.handDis = ""
         i=0
         while i < current.hp:
             current.hpDis = current.hpDis + ":heart:"
@@ -255,15 +273,18 @@ class Rogues(commands.Cog):
             current.shieldDis = current.shieldDis + ":blue_heart:"
             i+=1
         i=0
-        if len(current.hand)==0: current.handDis = "You have no scrolls. I'm suprised you're even still alive."
+        if len(current.hand)==0: current.handDis = "You have no scrolls. I'm surprised that you're even still alive."
         while i < len(current.hand):
-            current.handDis = f"{current.handDis} {current.hand[i].scrollName} a(n) {current.hand[i].scrollType} type of spell"
+            if i ==0:
+                current.handDis = f"{i+1}. {current.handDis} **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
+            else:
+                current.handDis = f"{current.handDis} **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
             i+=1
             if i == len(current.hand):
                 current.handDis = current.handDis + "."
             else:
-                current.handDis = current.handDis + ","
-        MyEmbed = nextcord.Embed(title = current.name, description = "These your stats",color = nextcord.Colour(0xFFD700))
+                current.handDis = current.handDis + f",\n{i+1}. "
+        MyEmbed = nextcord.Embed(title = current.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
         MyEmbed.add_field(name="HP", value=current.hpDis,inline=True)
         MyEmbed.add_field(name="Shields", value=current.shieldDis,inline=True)
         MyEmbed.add_field(name="PlayerID",value=current.uid,inline=True)
@@ -271,7 +292,11 @@ class Rogues(commands.Cog):
             MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
         MyEmbed.add_field(name="Owned Scrolls",value=current.handDis,inline=False)
         await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
-        
+    @stats.error
+    async def errorhandler(ctx:nextcord.Interaction,error):
+        if isinstance(error,nextcord.errors.ApplicationCheckFailure):
+            await ctx.send("There isn't a game happening right now.")
+       
 class Player:
     name="player"
     uid=0
@@ -282,13 +307,14 @@ class Player:
     pRoom = None
     nRoom = None
     hand = [] # Players can hold a max of 5 scrolls
-    handDis = "Scrolls: "
+    handDis = ""
     Rogue = False
     turnDone = False
     mem = nextcord.Member # incase I need anything specific from discords member class
     reacting = False
     def __init__(self,player:nextcord.Member,uid):
-        self.name = player.name
+        if player.nick!=None:self.name = player.nick
+        else: self.name = player.name
         self.mem = player
         self.uid = uid
         self.hand = []
@@ -296,23 +322,34 @@ class Player:
         self.shield = 0
         self.pRoom = None
         self.nRoom = None
-        self.Rogue = False
         self.turnDone = False
         self.handDis = ""
         self.hpDis = ""
-        self.shieldDis=""
+        self.shieldDis="None"
         self.reacting = False
     def addScroll(self, scroll):
-        print(f"Modifying {self.name}'s hand")
         if len(self.hand)!=5:
             self.hand.append(scroll)
             print(f"{scroll.scrollName} added to {self.name}'s hand")
         elif len(self.hand)==5:
             # Need to make a function for prompting the player if they're full to choose to swap and discard a scroll or give to another player
-            print("Hand full...add later")
+            print("Hand full...add code later")
         else:
-            print("something went wrong")
-    
+            print(f"Something went wrong when dealing scrolls to {self.name}")
+    async def use(self,interaction:nextcord.Interaction,scroll,target:nextcord.Member=None,target2:nextcord.Member=None):
+        for i in self.hand:
+            if scroll == i.scrollName:
+                if target == None:
+                    await i.action(interaction)
+                    return
+                elif target2 != None:
+                    await i.action(interaction,target,target2)
+                    return
+                else:
+                    await i.action(interaction,target)
+                    return
+        await interaction.send("That was not a valid name for a scroll that you own.")
+
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     scrollName = ""
     scrollType = "" # Off Def Anc
@@ -335,50 +372,154 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.flavor = flavor
     def toPrint(self):
         print(f"{self.scrollName}. Type: {self.scrollType}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
-    async def action(self,interaction:nextcord.Interaction,target:None,target2:None):
+    async def action(self,interaction:nextcord.Interaction,target:nextcord.Member=None,target2:nextcord.Member=None):
         match self.scrollName:
             case "Teleport":
-                print("Player casted Teleport")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Fireball":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Counter":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Mold Earth":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
+                if target != None and target2==None: # if there's only one target
+                    healer = Rogues.identify(Rogues,interaction.user)
+                    healed = Rogues.identify(Rogues,target)
+                    same = healer==healed
+                    if same: # if the person ONLY targets themself.
+                        await interaction.send(f"{healer.name} shielded themselves")
+                        healed.shield+=2
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    else:
+                        await interaction.send(f"{healer.name} casted Mold Earth on {healed.name}!")
+                        healed.shield+=2
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    healer.hand.remove(self)
+                    deck.append(self)
+                    await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*")
+                    if healer.reacting==True:
+                        return
+                    healer.turnDone = True
+                    return
+                elif target!=None and target==target2: # covering if the player puts in the same @ twice
+                    healer = Rogues.identify(Rogues,interaction.user)
+                    healed = Rogues.identify(Rogues,target)
+                    same = healer==healed
+                    if same: # if the person ONLY targets themself.
+                        await interaction.send(f"{healer.name} shielded themselves")
+                        healed.shield+=2
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    else:
+                        await interaction.send(f"{healer.name} casted Mold Earth on {healed.name}!")
+                        healed.shield+=2
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    healer.hand.remove(self)
+                    deck.append(self)
+                    await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*")
+                    if healer.reacting==True:
+                        return
+                    healer.turnDone = True
+                elif target2!=None and target!=target2: # two targets are not the same
+                    healer = Rogues.identify(Rogues,interaction.user)
+                    healed = Rogues.identify(Rogues,target)
+                    healed2 = Rogues.identify(Rogues,target2)
+                    healed.shield+=1
+                    healed2.shield+=1
+                    if healer == healed:
+                        await interaction.send(f"{healer.name} shielded themself and {healed2.name}")
+                        print(f"{healer.name} and {healed2.name} were shielded to {healer.shield} and {healed2.shield} shields")
+                    elif healer == healed2:
+                        await interaction.send(f"{healer.name} shielded themself and {healed.name}")
+                        print(f"{healer.name} and {healed.name} were shielded to {healer.shield} and {healed.shield} shields")        
+                    else:
+                        await interaction.send(f"{healer.name} casted Magic Shield on {healed.name} and {healed2.name}!")
+                        print(f"{healed.name} and {healed2.name} were shielded to {healed.shield} and {healed2.shield} shields")
+                    healer.hand.remove(self)
+                    deck.append(self)
+                    await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*")
+                    if healer.reacting==True:
+                        return
+                    healer.turnDone = True
+                else:
+                    print("fail")
+                    await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
             case "Eldritch Blast":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Call Lightning":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Dragon Breath":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Scrying":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Divine Wisdom":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Barbarian Rage":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Polymorph":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Invisibility":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Magic Shield":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
+                if target != None and target2==None:
+                    healer = Rogues.identify(Rogues,interaction.user)
+                    healed = Rogues.identify(Rogues,target)
+                    healed.shield+=1
+                    same = interaction.user==target
+                    if same:
+                        await interaction.send(f"{healer.name} shielded themselves")
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    else:
+                        await interaction.send(f"{interaction.user} casted Magic Shield on {healed.name}!")
+                        print(f"{healed.name} was shielded to {healed.shield} shields")
+                    healer.hand.remove(self)
+                    deck.append(self)
+                    await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*")
+                    if healer.reacting==True:
+                        return
+                    healer.turnDone = True
+                else:
+                    print("fail")
+                    await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
             case "Steal":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Blood Altar":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Cure Wounds":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
+                if target != None and target2==None:
+                    healer = Rogues.identify(Rogues,interaction.user)
+                    healed = Rogues.identify(Rogues,target)
+                    healed.hp+=1
+                    same = healer==healed
+                    if same:
+                        await interaction.send(f"{healer.name} healed themselves")
+                    else:
+                        await interaction.send(f"{healer.name} casted Cure Wounds on {healed.name}!")
+                    print(f"{healed.name} was healed to {healed.hp}")
+                    healer.hand.remove(self)
+                    deck.append(self)
+                    if healed.hp >5:
+                        healed.hp = 5
+                        if same: await interaction.send(f"Well that was kind of dumb. You were full health...\n*Your {self.scrollName} has returned to the Dungeon*")   
+                        else: await interaction.send(f"Well that was kind of dumb. {healed.name} was full health...\n*Your {self.scrollName} has returned to the Dungeon*")
+                        healer.turnDone = True
+                        return
+                    await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*")
+                    healer.turnDone = True
+                else:
+                    print("fail")
+                    await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
             case "Holy Shield":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Soul Knot":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Wish":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case "Za Warudo":
-                print("Player casted ")
+                print(f"{interaction.user} casted {self.scrollName}")
             case _: #Default
-                await interaction.response.send_message("That was not a valid name for a scroll.",ephemeral=True)
+                await interaction.response.send_message("That was not a valid name for a scroll. Orrrrrr something went wrong...tell my Master",ephemeral=True)
 class Enemy:
     hp = 5
 
@@ -386,11 +527,11 @@ class Enemy:
 async def setup(bot):
     bot.add_cog(Rogues(bot))
 # Notes:
-# Need to make a tear down command at the end of all of this to wipe everything
-# Player commands to check their stats
-# Implement bot creating a text channel for dungeon and VCs for each room. Thinking to create a category for the game that the bot can then delete afterwards.
-# Current idea is to have deck command make all the scrolls and for the ones with multiple counts to be done in a loop, that way I can pass the appropriate copy number.
-# Each scroll will just be a function in the scroll class
+# Need to make a tear down command at the end of all of this to wipe everything ADD MORE TO IT
+''' Player commands to check their stats DONE'''
+'''Implement bot creating a text channel for dungeon and VCs for each room. Thinking to create a category for the game that the bot can then delete afterwards. DONE'''
+'''Current idea is to have deck command make all the scrolls and for the ones with multiple counts to be done in a loop, that way I can pass the appropriate copy number. DONE'''
+'''Each scroll will just be a function in the scroll class DONE'''
 # When dealing with Rooms make an exit check that will happen each time a room has been entered by a player
 # Need to make A LOT OF CHECKS primarily to see if a player has a spell(and which copy) in their hand
 # Make a removeShields function for when the floor advances.
