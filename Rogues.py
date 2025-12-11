@@ -879,7 +879,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                         caster.hand.remove(self)
                         victim.reacting = True
                         #await Rogues.react(Rogues,interaction,victim,reaction)
-                        await Rogues.react.start(Rogues,interaction,victim,caster,reaction)
+                        await Rogues.react(Rogues,interaction,victim,caster,reaction)
                 else: # if there's no target
                     print("fail")
                     await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
