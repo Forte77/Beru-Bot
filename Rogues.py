@@ -8,9 +8,6 @@ from nextcord import Interaction
 from nextcord import application_command
 from nextcord.ext import application_checks
 from nextcord import ApplicationCommandOptionType
-intents = nextcord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix = "?", intents = intents,help_command=None)
 with open("BotToken.txt",'r') as file:
     lines = file.readlines() #added my id to the bottoken text
     token = lines[0]
@@ -28,6 +25,8 @@ ready = True
 deck = []
 evil = False
 players = []
+bads = 0
+start = False
 # Need a function to check if there is a game running already
 async def ongoing(interaction:nextcord.Interaction):
     return ready == False
@@ -82,8 +81,21 @@ class Rogues(commands.Cog):
                 await player.add_roles(playerRole)
                 player8 = Player(player,uid)
                 players.append(player8)
+            case 9:
+                await player.add_roles(playerRole)
+                player9 = Player(player,uid)
+                players.append(player9)
             case _:
                 print("too many players")
+        match len(players)/2:#how many rogues there will be
+            case 2:
+                bads = 1
+            case 3:
+                bads = 2
+            case 4:
+                if len(players)>8: bads=3
+                else:
+                    bads = 2
     def identify(self,player:nextcord.Member): #function to identify discord Member to Player class counterpart
         for i in players:
             if player == i.mem:
@@ -132,7 +144,7 @@ class Rogues(commands.Cog):
             player.addScroll(dealt) # add the scroll to the player's hand
     @commands.command()
     @commands.check(is_me)
-    async def loot(self,ctx,test:str = None,player2:nextcord.Member=None):
+    async def loot(self,ctx,test:str=None,player2:nextcord.Member=None):
         player = self.identify(ctx.author)
         if player2 != None:
             player2 = self.identify(player2)
@@ -168,16 +180,17 @@ class Rogues(commands.Cog):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
             await ctx.send("You're not my Master!")
         #I'm thinking use deck command to make each scroll and the scroll class takes the variables to initialize them
-    
+
     @nextcord.slash_command(name="rogues",description="Start the game and select the players")
     async def RogueGame(self,interaction:nextcord.Interaction, #function to start the game
                         member1:nextcord.Member, # Members to be added to the game by the person who used the command.
-                        member2:nextcord.Member = None, # Will make this required later
-                        member3:nextcord.Member = None,
-                        member4:nextcord.Member = None,
-                        member5:nextcord.Member = None,
-                        member6:nextcord.Member = None,
-                        member7:nextcord.Member = None): 
+                        member2:nextcord.Member=None, # Will make this required later
+                        member3:nextcord.Member=None,
+                        member4:nextcord.Member=None,
+                        member5:nextcord.Member=None,
+                        member6:nextcord.Member=None,
+                        member7:nextcord.Member=None,
+                        member8:nextcord.Member=None):
         global ready
         if ready==False:
             await interaction.response.send_message("A game has already started")
@@ -191,6 +204,7 @@ class Rogues(commands.Cog):
         if member5 != None: people.append(member5)
         if member6 != None: people.append(member6)
         if member7 != None: people.append(member7)
+        if member8 != None: people.append(member8)
         if member2 ==None or member3==None: #change to 4 when ready
             await interaction.response.send_message("Not enough players for a fair game. Please get more acquaintances. At least 4 people total(including yourself) but a max of 8")
         else:
@@ -211,13 +225,12 @@ class Rogues(commands.Cog):
         await interaction.send("Please have all party members join the SafeVC")
         await self.make(interaction)
         # Need to add Map related stuff
-        await interaction.send("The dungeon has supplied magic scrolls to help the party.")
+        await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
         for i in players:
             self.deal(i)
 
     @nextcord.slash_command(name="teardown",description="End the game")
-    @application_checks.check(is_me)
-    @application_checks.check(ongoing)
+    @application_checks.check(is_me or ongoing)    
     async def teardown(self,interaction:nextcord.Interaction):
         global ready
         ready = True # set the ready check to false since the game has started
@@ -325,53 +338,442 @@ class Rogues(commands.Cog):
                 victim.hp-=1
                 await victim.mem.send(f"You have taken damage.")
                 return
-    #@tasks.loop(seconds=1)
-    async def react(self,interaction,victim,reaction):
-        #count = self.react.current_loop
-        #remaining = 45 - count
-        reset = self # I DO NOT KNOW why my self.bot.wait_for wouldn't work but this was a work around.
-        self.bot = bot
-        try:
-            msg = await self.bot.wait_for('message',check=is_me,timeout=45.0) # Wait 45 seconds
-            self = reset
-            #@Rogues.event
-            #async def on_message(self,message):
-        except asyncio.TimeoutError:
+    @tasks.loop(seconds=1)
+    async def reactTime(self,interaction:nextcord.Interaction,victim):
+        count = self.reactTime.current_loop
+        remaining = 45 - count
+        if remaining==0:
+            self.reactTime.stop()
             await victim.mem.send(f"RIP")
             await victim.mem.send(f"You failed to react in time.")
             await Rogues.damage(Rogues,victim)
             victim.reacting = False
-        else:
-            for i in reaction:
-                if str.lower(msg.content) == str.lower(i.scrollName):
-                    print("reacted")
-                    await victim.use(interaction,i)
-                    match str.lower(i.scrollName):
-                        case "invisibility":
-                            await Rogues.damage(Rogues,victim,True)
-                            victim.reacting = False
-                            return
-                        case "teleport":
-                            await Rogues.damage(Rogues,victim,True)
-                            victim.reacting = False
-                            return
-                        case "counter":
-                            await Rogues.damage(Rogues,victim,True)
-                            victim.reacting = False
-                            return
-                        case "za warudo":
-                            await Rogues.damage(Rogues,victim,True)
-                            victim.reacting = False
-                            return
-                    await Rogues.damage(Rogues,victim)
-                    victim.reacting = False
-                    return
-            await victim.mem.send("That is not a scroll that can save you.")
-#        if remaining ==0:
- #           self.react.stop()
-  #          victim.mem.send(f"You failed to react in time.")
-   #         self.damage(victim)
-            return
+        
+    async def react(self,interaction,victim,caster,reaction):
+        victim.handDis = ""
+        MyEmbed = nextcord.Embed(title = "Reaction Spells", description = "These are the spells you own that can be used to save you from this attack",color = nextcord.Colour(0xFFD700))
+        i=0
+        while i < len(reaction):
+            if i ==0:
+                victim.handDis = f"{i+1}. {victim.handDis} **{reaction[i].scrollName}**"
+            else:
+                victim.handDis = f"{victim.handDis} **{reaction[i].scrollName}**"
+            i+=1
+            if i == len(victim.hand):
+                break
+            elif i == len(victim.hand)-1:
+                victim.handDis = victim.handDis + "."
+            else:
+                victim.handDis = victim.handDis + f",\n{i+1}. "
+        MyEmbed.add_field(name="Owned Scrolls",value=victim.handDis,inline=False)
+        class Buttons(nextcord.ui.View):
+            size = 0
+            reaction = []
+            i = 0
+            def __init__(self,reaction,size,timeout = 45):
+                super().__init__(timeout=timeout)
+                self.value = None
+                self.size=size
+                self.reaction = reaction
+            match size:
+                case 1:
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def on_click_me(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                case 2:
+                    i = 0
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt1(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 1
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt2(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                case 3:
+                    i = 0
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt1(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 1
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt2(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 2
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt3(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                case 4:
+                    i = 0
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt1(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 1
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt2(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 2
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt3(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 3
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt4(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                case 5:
+                    i = 0
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt1(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 1
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt2(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 2
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt3(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 3
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt4(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+                    i = 4
+                    @nextcord.ui.button(label=reaction[i].scrollName,style=nextcord.ButtonStyle.primary,custom_id=f"Reaction #{i}")
+                    async def butt5(self,button:nextcord.ui.Button,interaction:nextcord.Interaction):
+                        print("reacted")
+                        match str.lower(reaction[i].scrollName):
+                            case "invisibility":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "teleport":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,True)
+                                victim.reacting = False
+                            case "counter":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case "za warudo":
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim,caster,True)
+                                victim.reacting = False
+                            case _:
+                                await victim.use(interaction,reaction[i])
+                                await Rogues.damage(Rogues,victim)
+                                victim.reacting = False
+                        #self.value=True
+        view = Buttons(self,reaction,len(reaction))
+        await victim.mem.send(embed=MyEmbed,view=view)
+        self.reactTime.start(self,interaction,victim)
+        return
        
 class Player:
     name="player"
@@ -462,10 +864,10 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     await target.send(f"You are being targetted by {caster.name} who casted {self.scrollName}.\nYou have 45 seconds to react if you have any scrolls that can save you.")
                     for i in victim.hand:
                         if i.scrollType == "Defensive" or i.scrollName == "Za Warudo":
-                            await target.send(f"You have at least one scroll in your hand that can be used to save you from this spell. Which scroll will you use?")
                             reaction.append(i)
+                            if len(reaction)==1:
+                                await target.send(f"You have at least one scroll in your hand that can be used to save you from this spell. Which scroll will you use?")
                             hit = False
-                            break
                     if hit:
                         await target.send(f"You have no scrolls that can save you from this spell. Big rip")
                         await Rogues.damage(Rogues,victim)
@@ -476,8 +878,8 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                         await safeRoom.send(f"{caster.name} casted {self.scrollName} at {victim.name}")
                         caster.hand.remove(self)
                         victim.reacting = True
-                        await Rogues.react(bot,interaction,victim,reaction)
-                        #Rogues.react.start(interaction,victim)
+                        #await Rogues.react(Rogues,interaction,victim,reaction)
+                        await Rogues.react.start(Rogues,interaction,victim,caster,reaction)
                 else: # if there's no target
                     print("fail")
                     await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
