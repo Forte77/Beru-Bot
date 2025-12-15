@@ -384,7 +384,7 @@ class Rogues(commands.Cog):
                 if show:
                     self.show=show
                 if final:
-                    self.final = True/
+                    self.final = True
                     self.label = "Take the hit"
                     self.custom_id = str(6)
                 else:
