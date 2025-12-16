@@ -270,12 +270,14 @@ class Rogues(commands.Cog):
     async def show(self,interaction:nextcord.Interaction,target:nextcord.Member=nextcord.SlashOption(description="If you don't select a player you will show everyone in the room.",required=False)):
         caster = self.identify(interaction.user)
         if caster.hand != None or caster.hand != []:
-            victim=None
+            view = self.Reacts(timeout=120)
             if target!=None:
                 victim = self.identify(target)
-            view = self.Reacts(timeout=120)
-            MyEmbed = self.chooseScroll(victim,caster,caster.hand,view=view,show=True)
+                MyEmbed = self.chooseScroll(victim,caster,caster.hand,view=view,show=True)
+            else:
+                MyEmbed = self.chooseScroll(victim=caster,caster=None,scrolls=caster.hand,view=view,show=True)
             await caster.mem.send(embed=MyEmbed,view=view)
+            await interaction.response.send_message("Look at DMs",ephemeral=True)
         else:
             await interaction.response.send_message("You have no scrolls to show",ephemeral=True)
     @player.subcommand(description="Give another player one of your scrolls.")
@@ -285,9 +287,11 @@ class Rogues(commands.Cog):
         view = self.Reacts(timeout=120)
         MyEmbed = self.chooseScroll(victim,caster,caster.hand,view=view,give=True)
         await caster.mem.send(embed=MyEmbed,view=view)
+        await interaction.response.send_message("Look at DMs",ephemeral=True)
     @player.subcommand(description="End your turn manually")
     async def end(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
+        await interaction.response.send_message(f"{caster.name} has ended their turn")
         caster.turnDone = True
     @player.subcommand(description="Display your stats")
     #@nextcord.slash_command(name="stats",description="your stats")
@@ -306,17 +310,34 @@ class Rogues(commands.Cog):
         while i < current.shield:
             current.shieldDis = current.shieldDis + ":shield:"
             i+=1
-        i=0
-        if len(current.hand)==0: current.handDis = "You have no scrolls. I'm surprised that you're even still alive."
-        while i < len(current.hand):
+        #i=0
+        if len(current.hand)==0: 
+            current.handDis = "You have no scrolls. I'm surprised that you're even still alive."
+        '''while (i < len(current.hand)):
+            print(current.handDis)
             if len(current.hand)==1:
                 current.handDis = f"{i+1}. {current.handDis} **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
+                i+=1
+                print("test2")
+            elif i == (len(current.hand)-1):
+                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
+                i+=1
+                print("test4")
+            else:
+                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
+                i+=1
+                print("test5")'''
+        i=0
+        current.handDis = ""
+        while i < len(current.hand):
+            if len(current.hand)==1:
+                current.handDis = f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
             elif i == len(current.hand):
                 break
             elif i == len(current.hand)-1:
-                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
+                current.handDis = current.handDis + f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
             else:
-                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
+                current.handDis = current.handDis + f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
             i+=1
         MyEmbed = nextcord.Embed(title = current.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
         MyEmbed.add_field(name="HP:heart:", value=current.hpDis,inline=True)
@@ -325,7 +346,7 @@ class Rogues(commands.Cog):
         if current.Rogue:
             MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
         MyEmbed.add_field(name="Owned Scrolls",value=current.handDis,inline=False)
-        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
+        await interaction.send(embed=MyEmbed,ephemeral=True)
     @player.subcommand(description="Duel another player")
     async def duel(self,interaction:nextcord.Interaction,target:nextcord.Member):
         caster = self.identify(interaction.user)
@@ -419,14 +440,16 @@ class Rogues(commands.Cog):
                 elif self.show:
                     if self.victim != None:
                         await self.victim.mem.send(f"{self.caster.name} has shown you that they own a {self.label} scroll")
+                        await self.caster.mem.send(f"You showed {self.victim.name} your {self.label} scroll")
                     else:
                         await safeRoom.send(f"{self.caster.name} has shown you all that they own a {self.label} scroll")
+                        await self.caster.mem.send(f"You showed everyone in {safeRoom} your {self.label} scroll")
                 elif self.give:
-                    if self.caster == self.victim: await self.caster.send("You can't give yourself stuff")
+                    if self.caster == self.victim: await self.caster.mem.send("You can't give yourself stuff")
                     else:
-                        await self.victim.send(f"{self.caster.name} is giving you their {self.label} scroll")
+                        await self.victim.mem.send(f"{self.caster.name} is giving you their {self.label} scroll")
                         self.victim.addScroll(self.scroll)
-                        await self.caster.send(f"You are giving {self.victim.name} your {self.label} scroll")
+                        await self.caster.mem.send(f"You are giving {self.victim.name} your {self.label} scroll")
     async def react(self,interaction,victim,caster,reaction):
         view = self.Reacts()
         MyEmbed = self.chooseScroll(victim,caster,reaction,view)

@@ -120,6 +120,17 @@ async def reload(ctx,cogname):
 async def errorhandler(ctx,error):
         if isinstance(error,commands.CheckFailure):
             await ctx.send("You're not my Master!")
+@bot.command()
+async def feedback(ctx:nextcord.Member,*,feedback:str):
+    await ctx.message.delete()
+    if feedback == None:
+        await ctx.send("Please type some thing as feedback")
+        return
+    await ctx.send("Sending your feeback to my Master...\nThank you")
+    print(feedback)
+    me = bot.get_user(own) or await bot.fetch_user(own)
+    await me.send(f"# Feedback Incoming:\n{feedback}")
+    await ctx.author.send("__Your feedback has been sent.__")
 @bot.command() # Reload slash commands
 @commands.check(is_me)
 async def refresh(ctx): #Doing this on_ready uses up rate limit for the API
