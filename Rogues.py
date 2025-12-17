@@ -104,7 +104,7 @@ class Rogues(commands.Cog):
             if player == i.mem:
                 return i
     def Deck(self): #create the "deck" of scrolls for the dungeon
-        print("Creating Deck")
+        print("Creating Deck") # counter block avoid
         self.createScroll("Wish","Ancillary",False,False,False,1,"") # TBD
         self.createScroll("Za Warudo","Ancillary",False,False,False,1,"") # when prompting defensive scrolls need to also check for this.
         self.createScroll("Soul Knot","Ancillary",False,False,False,1,"") # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
@@ -313,20 +313,6 @@ class Rogues(commands.Cog):
         #i=0
         if len(current.hand)==0: 
             current.handDis = "You have no scrolls. I'm surprised that you're even still alive."
-        '''while (i < len(current.hand)):
-            print(current.handDis)
-            if len(current.hand)==1:
-                current.handDis = f"{i+1}. {current.handDis} **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
-                i+=1
-                print("test2")
-            elif i == (len(current.hand)-1):
-                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell"
-                i+=1
-                print("test4")
-            else:
-                current.handDis = {current.handDis}+f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
-                i+=1
-                print("test5")'''
         i=0
         current.handDis = ""
         while i < len(current.hand):
@@ -426,7 +412,7 @@ class Rogues(commands.Cog):
                         case "counter":
                             await self.victim.use(interaction,self.label,self.caster)
                             await Rogues.damage(Rogues,self.victim,self.caster,True)
-                            self.victim.reacting = False
+                            #self.victim.reacting = False for my implementation I think I should NOT do this yet
                         case "za warudo":
                             await self.victim.use(interaction,self.label,self.caster)
                             await Rogues.damage(Rogues,self.victim,self.caster,True)
@@ -600,7 +586,16 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 print(f"{interaction.user} COUNTERED")
                 if caster.reacting == True:
                     print("COUNTER")
-
+                    hit = True
+                    reaction = []
+                    await target.mem.send(f"{caster.name} is countering your spell.\nYou have 45 seconds to react if you have any scrolls that can save you.")
+                    for i in target.hand:
+                        if i.scrollType == "Defensive" or i.scrollName == "Za Warudo":
+                            reaction.append(i)
+                            if len(reaction)==1:
+                                await target.send(f"You have at least one scroll in your hand that can be used to save you from this spell. Which scroll will you use?")
+                else:
+                    await interaction.send("This scroll can only be used in reaction to another spell.")
             case "mold earth":
                 print(f"{interaction.user} casted {self.scrollName}")
                 if target != None and target2==None: # if there's only one target
