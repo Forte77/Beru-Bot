@@ -115,6 +115,7 @@ async def errorhandler(ctx,error):
 async def reload(ctx,cogname):
     print("Reload?")
     bot.reload_extension(cogname)
+    print("yes")
     await ctx.send("Cog has been __Tactically__ Reloaded")
 @reload.error
 async def errorhandler(ctx,error):

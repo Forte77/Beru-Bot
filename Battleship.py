@@ -14,8 +14,8 @@ class Battleship(commands.Cog):
         self.placed2 = False
         self.turn = ""
     async def render(self,ctx,board):
-        numbers = [":one:",":two:",":three:",":four:",":five:",":six:",":seven:",":eight:",":nine:",":ten:"] #setting up column
-        alphabet = [":regional_indicator_a:",":regional_indicator_b:",":regional_indicator_c:",":regional_indicator_d:",":regional_indicator_e:",":regional_indicator_f:",":regional_indicator_g:",":regional_indicator_h:",":regional_indicator_i:",":regional_indicator_j:",] #setting up row
+        numbers = [":one:",":two:",":three:",":four:",":five:",":six:",":seven:",":eight:",":nine:"] #setting up column
+        alphabet = [":regional_indicator_a:",":regional_indicator_b:",":regional_indicator_c:",":regional_indicator_d:",":regional_indicator_e:",":regional_indicator_f:",":regional_indicator_g:",":regional_indicator_h:",":regional_indicator_i:"] #setting up row
         stringboard = "" 
         stringboard = stringboard + ":black_medium_square:" #initialize board with the black square in the corner
         for x in range(len(board[0])): #making the row of letters and going to the next row
@@ -149,6 +149,8 @@ class Battleship(commands.Cog):
                         await self.render(ctx.author,displayboard) #update board
                     if self.shipcount(shootboard) == 0: #end the game
                         self.playing = False
+                        self.placed1 = False
+                        self.placed2 = False
                         #Notify players who won
                         if ctx.author == self.player1:
                             await self.player1.send("You have won the battle!")

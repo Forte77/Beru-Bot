@@ -32,7 +32,9 @@ class Events(commands.Cog):
             elif msg.content == "p" or msg.content == "P":
                 await msg.channel.send("Shut up Blizzerd")
             elif msg.content == "timezone":
-                await msg.channel.send("[Timezone helper](https://nextcordtools.io/timestamp)")
+                await msg.channel.send("Converting Time Zones? Use [datetimecord](https://datetimecord.rauf.wtf/).")
+            elif msg.content == "time zone":
+                await msg.channel.send("Converting Time Zones? Use [datetimecord](https://datetimecord.rauf.wtf/).")
     #When a member joins the server the bot wll DM them.
     @commands.Cog.listener()
     async def on_member_join(self,member):
