@@ -100,30 +100,35 @@ class Rogues(commands.Cog):
                 if len(players)>8: bads=3
                 else:
                     bads = 2
-    def identify(self,player:nextcord.Member): #function to identify discord Member to Player class counterpart
-        for i in players:
-            if player == i.mem:
-                return i
+    def identify(self,player:nextcord.Member=None,name:str=None): #function to identify discord Member to Player class counterpart
+        if player!=None:
+            for i in players:
+                if player == i.mem:
+                    return i
+        else:
+            for i in players:
+                if name == i.name:
+                    return i
     def Deck(self): #create the "deck" of scrolls for the dungeon
         print("Creating Deck") # counter block avoid
         self.createScroll("Wish","Ancillary",False,False,False,1,"") # TBD
         self.createScroll("Za Warudo","Ancillary",False,False,False,1,"") # when prompting defensive scrolls need to also check for this.
-        self.createScroll("Soul Knot","Ancillary",False,False,False,1,"Tie your soul and destiny to another player.") # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
+        self.createScroll("Soul Knot","Ancillary",False,False,False,1,"Tie your soul and destiny to another player.",True) # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
         self.createScroll("Holy Shield","Defensive",False,False,False,1,"A shield of Divinity.\n*Grants +5 shields*") # Super Strong long lasting shield. numbers will be worked out later
         self.createScroll("Teleport","Defensive",False,False,False,6,"A spell that can be used to return to a previous room or avoid an attack.") # 6 teleport scrolls it can not be countered blocked or avoided (it's not an attack or aimed at anyone)
-        self.createScroll("Fireball","Offensive",True,True,True,7,"So anyway I started blasting.") # 7 Fireball can be countered blocked and avoided
+        self.createScroll("Fireball","Offensive",True,True,True,7,"So anyway I started blasting.",True) # 7 Fireball can be countered blocked and avoided
         self.createScroll("Counter","Defensive",False,True,True,7,"A spell that can be used to counter attack someone that tried to cast a spell at you.") # Counter spell can be blocked and avoided but not countered
-        self.createScroll("Mold Earth","Defensive",False,False,False,3,"A defensive type of spell that can grant a shield to two different people or you can double up on one person or yourself") # Covers two players #
-        self.createScroll("Eldritch Blast","Offensive",True,True,False,5,"A cryptic attack that always finds it's target.") # Can't be avoided
-        self.createScroll("Call Lightning","Offensive",False,True,True,5,"Summon magical lightning bolts from above that can not be countered.") # Can't be countered
-        self.createScroll("Dragon Breath","Offensive",True,False,True,5,"A flame so hot it bypasses through shields of any kind.") # Can't be blocked
-        self.createScroll("Scrying","Ancillary",False,False,False,4,"Casting this spell will allow you to see one of the scrolls of your target. But they get to choose.") # The target chooses which scroll to show
-        self.createScroll("Divine Wisdom","Ancillary",False,False,False,3,"") # Reveal all scrolls of one chosen player to the user
+        self.createScroll("Mold Earth","Defensive",False,False,False,3,"A defensive type of spell that can grant a shield to two different people or you can double up on one person or yourself",True,True) # Covers two players #
+        self.createScroll("Eldritch Blast","Offensive",True,True,False,5,"A cryptic attack that always finds it's target.",True) # Can't be avoided
+        self.createScroll("Call Lightning","Offensive",False,True,True,5,"Summon magical lightning bolts from above that can not be countered.",True,True) # Can't be countered
+        self.createScroll("Dragon Breath","Offensive",True,False,True,5,"A flame so hot it bypasses through shields of any kind.",True) # Can't be blocked
+        self.createScroll("Scrying","Ancillary",False,False,False,4,"Casting this spell will allow you to see one of the scrolls of your target. But they get to choose.",True) # The target chooses which scroll to show
+        self.createScroll("Divine Wisdom","Ancillary",False,False,False,3,"",True) # Reveal all scrolls of one chosen player to the user
         self.createScroll("Barbarian Rage","Defensive",False,False,False,3,"A spell that activates the dormant barbarian rage that sleeps in anyone. Allowing them to shield through attacks out of sheer anger.\n*Gives 2 shields*") # Blocks TWO instances of damage
-        self.createScroll("Polymorph","Ancillary",True,False,False,2,"") # Prevent another player from taking action twice CAN only be countered.
+        self.createScroll("Polymorph","Ancillary",True,False,False,2,"",True) # Prevent another player from taking action twice CAN only be countered.
         self.createScroll("Invisibility","Defensive",False,False,False,3,"You can go invisible to avoid attacks or cast it preemptively to be invisible for a limited time.") # Rogues have extra perks with invis
         self.createScroll("Magic Shield","Defensive",False,False,False,6,"Project a magical shield that will protect you from a single attack.\n*Gives 1 shield*") # Blocks a spell
-        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Heal yourself or others.\n*Gives 1 HP*") # heal #
+        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Heal yourself or others.\n*Gives 1 HP*",True) # heal #
         if evil == True:
             self.createScroll("Steal","Offensive",False,False,True,4,"") # TBD
             self.createScroll("Blood Altar","Offensive",False,False,False,3,"") # Sap Health if uninterupted. Won't heal if it is CBA
@@ -262,17 +267,12 @@ class Rogues(commands.Cog):
         pass
     @player.subcommand(description="Use one of your scrolls")
     #@nextcord.slash_command(name="cast",description="Use one of your scrolls")
-    async def cast(self,interaction:nextcord.Interaction,scroll:str,target:nextcord.Member = None,target2:nextcord.Member = None):
+    async def cast(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
-        if caster.turnDone ==False:
-            self.chooseScroll(interaction,caster=caster,)
-        scroll = str(scroll)
-        if target != None and target2 == None:
-            await caster.use(interaction,scroll,target)
-        elif target2 != None:
-            await caster.use(interaction,scroll,target,target2)
+        if caster.turnDone==False:
+            self.chooseScroll(interaction,caster=caster,scrolls=caster.hand,cast=True)
         else:
-            await caster.use(interaction,scroll)
+            interaction.response.send_message("You have already ended your turn. You can not use another scroll.")
         return
     @player.subcommand(description="Show another player one of your scrolls.")
     async def show(self,interaction:nextcord.Interaction,target:nextcord.Member=nextcord.SlashOption(description="If you don't select a player you will show everyone in the room.",required=False)):
@@ -280,16 +280,16 @@ class Rogues(commands.Cog):
         if caster.hand != []:
             if target!=None:
                 victim = self.identify(target)
-                self.chooseScroll(interaction,victim,caster,caster.hand,show=True)
+                self.chooseScroll(interaction,victim=victim,caster=caster,scrolls=caster.hand,show=True)
             else:
-                self.chooseScroll(interaction,victim=caster,caster=None,scrolls=caster.hand,show=True)
+                self.chooseScroll(interaction,victim=caster,caster=caster,scrolls=caster.hand,show=True)
         else:
             await interaction.response.send_message("You have no scrolls to show",ephemeral=True)
     @player.subcommand(description="Give another player one of your scrolls.")
     async def give(self,interaction:nextcord.Interaction,target:nextcord.Member = nextcord.SlashOption(description="Choose who to give your scroll to.",required=True)):
         caster = self.identify(interaction.user)
         victim = self.identify(target)
-        self.chooseScroll(interaction,victim,caster,caster.hand,give=True)
+        self.chooseScroll(interaction,victim=victim,caster=caster,scrolls=caster.hand,give=True)
         #await caster.mem.send(embed=MyEmbed,view=view)
     @player.subcommand(description="End your turn manually")
     async def end(self,interaction:nextcord.Interaction):
@@ -402,9 +402,8 @@ class Rogues(commands.Cog):
                 self.show=show
             if cast:
                 self.cast=cast
-            
         def create_buttons(self):
-            for i in self.items:
+            for i in self.scrolls:
                 button = nextcord.Button(label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=i.serial)
                 button.callback = self.button_callback
                 self.add_item(button)
@@ -413,24 +412,28 @@ class Rogues(commands.Cog):
                 button.callback = self.button_callback
                 self.add_item(button)
         async def button_callback(self,interaction:nextcord.Interaction):
+            self.clear_items()
+            await interaction.message.edit(view=None)
+            for i in self.scrolls:
+                    if self.label == i.scrollName:
+                        spell = i
+                        break
             if self.react:
-                self.clear_items()
-                interaction.message.edit(view=None)
                 match str.lower(self.label):
                     case "invisibility":
-                        await self.victim.use(interaction,self.label)
+                        await self.victim.use(interaction,spell)
                         await Rogues.damage(Rogues,self.victim,True)
                         self.victim.reacting = False
                     case "teleport":
-                        await self.victim.use(interaction,self.label,self.caster)
+                        await self.victim.use(interaction,spell,self.caster)
                         await Rogues.damage(Rogues,self.victim,True)
                         self.victim.reacting = False
                     case "counter":
-                        await self.victim.use(interaction,self.label,self.caster)
+                        await self.victim.use(interaction,spell,self.caster)
                         await Rogues.damage(Rogues,self.victim,True)
                         #self.victim.reacting = False for my implementation I think I should NOT do this yet
                     case "za warudo":
-                        await self.victim.use(interaction,self.label,self.caster)
+                        await self.victim.use(interaction,spell,self.caster)
                         await Rogues.damage(Rogues,self.victim,True)
                         self.victim.reacting = False
                     case "take the hit":
@@ -438,12 +441,10 @@ class Rogues(commands.Cog):
                         self.victim.reacting = False
                     case _:
                         print("label check "+ self.label)
-                        await self.victim.use(interaction,self.label)
+                        await self.victim.use(interaction,spell)
                         await Rogues.damage(Rogues,self.victim)
                         self.victim.reacting = False
             elif self.show:
-                self.clear_items()
-                interaction.message.edit(view=None)
                 if self.victim != None:
                     await self.victim.mem.send(f"{self.caster.name} has shown you that they own a {self.label} scroll")
                     await self.caster.mem.send(f"You showed {self.victim.name} your {self.label} scroll")
@@ -451,8 +452,6 @@ class Rogues(commands.Cog):
                     await safeRoom.send(f"{self.caster.name} has shown you all that they own a {self.label} scroll")
                     await self.caster.mem.send(f"You showed everyone in {safeRoom} your {self.label} scroll")
             elif self.give:
-                self.clear_items()
-                interaction.message.edit(view=None)
                 if self.caster == self.victim: await self.caster.mem.send("You can't give yourself stuff")
                 else:
                     for i in self.caster.hand:
@@ -463,15 +462,64 @@ class Rogues(commands.Cog):
                             await self.caster.mem.send(f"You are giving {self.victim.name} your {self.label} scroll")
                             break
             elif self.cast:
-                self.clear_items()
-                interaction.message.edit(view=None)
-                await self.victim.use(interaction,self.label)
-                Player.use
+                MyEmbed = nextcord.Embed(title = "Who will be your victim(s)?", description = "These are the other Players you can choose",color = nextcord.Colour(0xFFD700))
+                for i in players:
+                    if i.name == self.caster.name:
+                        print("Same same")
+                    else:
+                        MyEmbed.add_field(name=f"Player {i.uid}",value=i.name,inline=True)
+                for i in self.caster.hand:
+                    if i.scrollName == self.label:
+                        spell = i
+                        if spell.aim or spell.aim2:
+                            # Make a new embed to display players
+                            
+                            view = Rogues.Aiming(spell,self.caster)
+                            await interaction.send(embed=MyEmbed,view=view)
+                    break    
         async def on_timeout(self): # Disable all items in the view when it times out
             for i in self.children:
                 i.disabled = True
-            
-    class Butt(nextcord.ui.Button):
+            print("disabled and refreshing")
+            self.refresh(self.children)
+            print("view refreshed")
+    class Aiming(nextcord.ui.view):
+        def __init__(self,scroll,caster):
+            super().__init__(timeout=15)
+            self.scroll = scroll
+            self.caster = caster
+            self.click = 0
+            self.t1 = None
+            self.t2 = None
+        def create_buttons(self):
+            for i in players:
+                button = nextcord.Button(label=i.name,style=nextcord.ButtonStyle.green,custom_id=i.serial)
+                button.callback = self.button_callback
+                self.add_item(button)
+        async def button_callback(self,interaction:nextcord.Interaction):
+            self.click +=1
+            if self.scroll.aim2 and self.click <2:
+                self.t1 = Rogues.identify(Rogues,name=self.label)
+                self.click+=1
+                self.refresh(self.children)
+            elif self.scroll.aim2 and self.click ==2:
+                self.t2 = Rogues.identify(Rogues,name=self.label)
+                self.click = 0
+                self.clear_items()
+                await interaction.message.edit(view=None)
+                await self.caster.use(interaction,self.scroll,target=self.t1.mem,target2=self.t2.mem)
+                return
+            elif self.scroll.aim:
+                self.t1 = Rogues.identify(Rogues,name=self.label)
+                await self.caster.use(interaction,self.scroll,self.t1.mem)
+            self.clear_items()
+            await interaction.message.edit(view=None)
+            return
+
+        async def on_timeout(self): # Disable all items in the view when it times out
+            for i in self.children:
+                i.disabled = True
+    '''class Butt(nextcord.ui.Button):
             def __init__(self,scroll=None,victim=None,caster=None,final=False,react=False,give=False,show=False,origin:nextcord.Interaction=None):
                 super().__init__()
                 self.label = scroll.scrollName
@@ -544,7 +592,7 @@ class Rogues(commands.Cog):
                         self.caster.hand.remove(self.scroll)
                         self.victim.addScroll(self.scroll)
                         await self.caster.mem.send(f"You are giving {self.victim.name} your {self.label} scroll")
-                '''if self.react ==False:
+                if self.react ==False:
                     for i in self.view.children:
                         i.disabled = True
                         print(i.label)
@@ -616,7 +664,7 @@ class Rogues(commands.Cog):
         if victim2!=None:
             caster.turnDone = True
             await self.reactCheck(self,Rogues,interaction=interaction,victim=victim2,caster=caster,scroll=scroll,counter=counter,block=block,avoid=avoid)
-    async def chooseScroll(self,interaction:nextcord.Interaction,victim,caster,scrolls,v2=None,react=False,show=False,give=False,cast=False):
+    async def chooseScroll(self,interaction:nextcord.Interaction,caster,scrolls,victim=None,v2=None,react=False,show=False,give=False,cast=False):
         if react:
             MyEmbed = nextcord.Embed(title = "Reaction Spells", description = "These are the scrolls you own that can be used to save you from this attack",color = nextcord.Colour(0xFFD700))
         else:
@@ -634,18 +682,13 @@ class Rogues(commands.Cog):
                 victim.handDis = victim.handDis + f"{i+1}. **{scrolls[i].scrollName}**\n"
             i+=1
         MyEmbed.add_field(name="Owned Scrolls",value=victim.handDis,inline=False)
-        '''if react:
-            for j in scrolls:
-                view.add_item(self.Butt(j,victim,caster,react=react))
-            view.add_item(self.Butt(j,victim,caster,react=react,final=True))
-        elif show:
-            for j in scrolls:
-                view.add_item(self.Butt(j,victim,caster,show=show))
-        elif give:
-            for j in scrolls:
-                view.add_item(self.Butt(j,victim,caster,give=give))'''
         if react:
             await interaction.response.send_message(f"Your target: {victim.name} is reacting to your spell.")
+            view = self.Reacts(scrolls=scrolls,victim=victim,caster=caster,react=react)
+            await victim.mem.send(embed=MyEmbed,view=view)
+        elif cast:
+            view = self.Reacts(scrolls=scrolls,victim=victim,v2=v2,caster=caster,react=react,show=show,give=give,cast=cast)
+            await interaction.response.send_message(embed=MyEmbed,view=view)
         else:
             view = self.Reacts(scrolls=scrolls,victim=victim,caster=caster,react=react,show=show,give=give,cast=cast)
             await interaction.response.send_message(embed=MyEmbed,view=view)
@@ -694,19 +737,17 @@ class Player:
             print("Hand full...add code later")
         else:
             print(f"Something went wrong when dealing scrolls to {self.name}")
-    async def use(self,interaction:nextcord.Interaction,scroll,target:nextcord.Member=None,target2:nextcord.Member=None):
-        for i in self.hand: # i think this is an unnecessary check but i'm gonna not mess with it for now.
-            if str.lower(scroll) == str.lower(i.scrollName):
-                if target == None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
-                    await i.action(interaction)
-                    return
-                elif target2 != None:
-                    await i.action(interaction,target,target2)
-                    return
-                else:
-                    await i.action(interaction,target)
-                    return
-        await interaction.send("That was not a valid name for a scroll that you own.",ephemeral=True)
+    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None):
+        if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
+            await spell.action(interaction,target,target2)
+            return
+        elif spell.aim and target!=None:
+            await spell.action(interaction,target)
+            return
+        else:
+            await spell.action(interaction)
+            return
+        #await interaction.send("That was not a valid name for a scroll that you own.",ephemeral=True)
 
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     scrollName = ""
@@ -716,10 +757,11 @@ class Scroll: #This will all be internal. No player interaction to create scroll
     avoid = True # Whether it can be avoided
     copy = 1 # will increment with each scroll that is created under the same name
     count = 3 # How many are in the deck total. This variable will be different for the different named scrolls but not change beyond that.
-    aim = False # Need to make a use command and prompt user for a target if this is ever true
+    aim = False 
+    aim2 = False
     serial = 0 # Serial number throughout the whole deck.
     flavor = "" # Flavor text of the scroll
-    def __init__(self,name,stype,counter,block,avoid,copy,count,flavor):
+    def __init__(self,name,stype,counter,block,avoid,copy,count,flavor,aim=None,aim2=None):
         self.scrollName = name
         self.scrollType = stype
         self.counter = counter
@@ -728,6 +770,8 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.copy = copy
         self.count = count
         self.flavor = flavor
+        self.aim = aim
+        self.aim2 = aim2
     def toPrint(self):
         print(f"{self.scrollName}. Type: {self.scrollType}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
     async def action(self,interaction:nextcord.Interaction,target=None,target2=None):
@@ -743,6 +787,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     await safeRoom.send(f"{caster.name} teleported away from {target.name}'s attack")
                     caster.reacting = False
                 else:
+                    print(self.scrollName)
                     pass # implement later
                     return
             case "fireball": # attacking a player so gotta check for a lot
@@ -759,6 +804,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     await Rogues.reactCheck(Rogues,interaction,target,caster,self,counter=self.counter)
                     caster.reacting = False
                 else:
+                    print(self.scrollName)
                     await interaction.send("This scroll can only be used in reaction to another spell.")
                     return
             case "mold earth":
@@ -965,7 +1011,6 @@ class Room:
     id = None
     name = None
 # list of rooms I can randomize and then in second half I add the exit room to the list
-
 
 #setup done outside the class
 async def setup(bot):
