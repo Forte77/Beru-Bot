@@ -135,6 +135,7 @@ async def feedback(ctx:nextcord.Member,*,feedback:str):
 @bot.command() # Reload slash commands
 @commands.check(is_me)
 async def refresh(ctx): #Doing this on_ready uses up rate limit for the API
+    await ctx.message.delete()
     try: #Slash commands
         await bot.sync_all_application_commands() #have to create slash command and then sync to bot to update it. Going to sync on ready for now
         print(f"Command(s) have been synced")
