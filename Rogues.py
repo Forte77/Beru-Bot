@@ -391,23 +391,16 @@ class Rogues(commands.Cog):
                 self.victim = victim
             if caster!=None:
                 self.caster = caster
-            if react:
-                self.react=react
-            else:
-                self.react=False
-            if give:
-                self.give = give
-            if show:
-                self.show=show
-            if cast:
-                self.cast=cast
+            self.react=react
+            self.give=give
+            self.show=show
+            self.cast=cast
         async def callback(self,interaction:nextcord.Interaction):
-            await interaction.response.defer()
             try:
-                print("11")
                 for i in self.scrolls:
                     if self.label == i.scrollName:
                         spell = i
+                        print(f"Breaking loop. Spell is: {spell.scrollName}")
                         break
                 print("12")
                 if self.react:
@@ -463,12 +456,12 @@ class Rogues(commands.Cog):
                         else:
                             MyEmbed.add_field(name=f"Player {i.uid}",value=i.name,inline=True)
                     if spell.aim or spell.aim2:
-                        view = Rogues.Aiming(Rogues,spell,self.caster)
-                        await interaction.response.edit_message(embed=MyEmbed,view=view)
-                    else: 
+                        aim = Rogues.Aiming(interaction=interaction,scroll=spell,caster=self.caster)
+                        await interaction.send(embed=MyEmbed,view=aim,ephemeral=True)
+                    else:
                         await self.caster.use(Rogues,interaction,spell)
                 self.view.clear_items()
-                await interaction.response.edit_message(view=self.view)
+                await interaction.edit_original_message(view=self.view,ephemeral=True)
                 self.view.stop()
             except Exception as e:
                 print(f"An error occured: {e}")
@@ -476,9 +469,9 @@ class Rogues(commands.Cog):
         def __init__(self,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False):
             super().__init__(timeout=15)
             for i in scrolls:
-                self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,show=show,cast=cast,label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=i.serial))
+                self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,show=show,cast=cast,label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=str(i.serial)))
             if react:
-                self.add_item(Rogues.Butt(scrolls=scrolls,react=react,label="Take the hit",style=nextcord.ButtonStyle.red,custom_id=77))
+                self.add_item(Rogues.Butt(scrolls=scrolls,react=react,give=give,show=show,cast=cast,label="Take the hit",style=nextcord.ButtonStyle.red,custom_id=str(77)))
             print("9")
         async def on_timeout(self): # Disable all items in the view when it times out
             for i in self.children:
@@ -487,6 +480,7 @@ class Rogues(commands.Cog):
     class AimButt(nextcord.ui.Button):
         def __init__(self,scroll=None,caster=None,label="",style:nextcord.ui.Button.style=None,custom_id=None):
             super().__init__(label=label,style=style,custom_id=custom_id)
+            self = Rogues.AimButt
             self.scroll = scroll
             self.caster = caster
             self.t1 = None
@@ -495,6 +489,7 @@ class Rogues(commands.Cog):
         async def callback(self,interaction:nextcord.Interaction):
             print("40")
             self.click +=1
+            print(f"{self.click} clicks")
             if self.scroll.aim2 and self.click <2:
                 self.t1 = Rogues.identify(Rogues,name=self.label)
                 self.click+=1
@@ -509,21 +504,28 @@ class Rogues(commands.Cog):
                 await self.caster.use(interaction,self.scroll,self.t1.mem)
                 self.view.clear_items()
                 await interaction.message.edit(view=None)
+            else:
+                self.view.stop()
+    @staticmethod
     class Aiming(nextcord.ui.View):
-        def __init__(self,scroll,caster):
+        def __init__(self,interaction:nextcord.Interaction,scroll=None,caster=None):
             super().__init__(timeout=15)
             self.scroll = scroll
             self.caster = caster
+            self.inter = interaction
             print("20")
             for i in players:
                 if self.scroll.scrollType == "Offensive" and i.name == self.caster.name:
                     print("same same")
                 else:
-                    self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=i.uid))
+                    print("add player button?")
+                    self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid)))
         async def on_timeout(self): # Disable all items in the view when it times out
             for i in self.children:
                 i.disabled = True
                 print(f"{i.label} disabled")
+            self.clear_items()
+            await self.inter.edit_original_message(view=self)
     async def reactCheck(self,interaction:nextcord.Interaction,victim,caster,scroll,victim2=None,same=False,counter=True,block=True,avoid=True): # Figured I should just turn this into a function rather than pasting under every offensive spell.
         if victim.reacting==True: # Players will need to react to spells one at a time.
             await caster.mem.send(f"{victim.name} is already being attacked and is currently reacting to another spell. Give them a moment to think they are safe(max 15 sec). Then you can try again.")
@@ -958,7 +960,6 @@ async def setup(bot):
 # When dealing with Rooms make an exit check that will happen each time a room has been entered by a player
 # Need to make A LOT OF CHECKS primarily to see if a player has a spell(and which copy) in their hand ... after thinking on this one MAYBE
 # Make a removeShields function for when the floor advances.
-
 
 # raise RuntimeError("Task is already launched and is not completed.")
 # RuntimeError: Task is already launched and is not completed.
