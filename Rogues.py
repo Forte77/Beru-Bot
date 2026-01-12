@@ -50,7 +50,7 @@ class Rogues(commands.Cog):
             #await safeRoom.send("Please have all party members join the SafeVC")
             await safeRoom.send("This looks like a safe spot.")
         except Exception as e:
-            print(f"An error occured: {e}")
+            print(f"53 An error occured: {e}")
     async def addPlayer(self,player:nextcord.Member,uid):
         match uid:
             case 1:
@@ -156,7 +156,9 @@ class Rogues(commands.Cog):
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member):
-        redo = self.identify(member)
+        print(member)
+        redo = self.identify(name=member)
+        print(isinstance(redo,Player))
         redo.turnDone = False
     @commands.command()
     #@commands.check(is_me)
@@ -478,7 +480,7 @@ class Rogues(commands.Cog):
                     await interaction.edit_original_message(view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"An error occured: {e}")
+                print(f"481 An error occured: {e}")
     class Reacts(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False):
             super().__init__(timeout=15)
@@ -494,46 +496,49 @@ class Rogues(commands.Cog):
             await self.oginter.edit_original_message(view=self)
             self.stop()
     class AimButt(nextcord.ui.Button):
-        def __init__(self,scroll=None,caster=None,label="",style:nextcord.ui.Button.style=None,custom_id=None,skip=False,embed=None):
+        def __init__(self,scroll=None,caster=None,label="",style:nextcord.ui.Button.style=None,custom_id=None,embed=None):
             super().__init__(label=label,style=style,custom_id=custom_id)
             self = Rogues.AimButt
             self.scroll = scroll
             self.caster = caster
             self.t1 = None
             self.t2 = None
-            self.skip = skip
             self.embed= embed
         async def callback(self,interaction:nextcord.Interaction):
             try:
                 await interaction.response.defer()
                 print("40")
-                if self.scroll.aim2:
+                if self.scroll.aim2 and not self.view.aimCheck():
                     self.t1 = Rogues.identify(Rogues,name=self.label)
                     self.disabled = True
-                    self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78)))
-                    self.skip = True
+                    self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78),embed=self.embed))
+                    print("did the embed work?")
                     await interaction.edit_original_message(embed=self.embed,view=self.view)
+                    self.view.setT(target=self.label)
+                    print("saving target 1?")
                     return
-                elif self.scroll.aim2 and self.skip:
+                elif self.scroll.aim2 and self.view.aimCheck:
                     print("hi2")
+                    self.t1 = self.view.getT()
                     print(self.t1.name)
                     if self.label == "Same person":
                         print("yep same")
-                        await self.caster.use(interaction,self.scroll,target=self.t1)
+                        await self.caster.use(interaction,self.scroll,target=self.t1.mem)
                     else:
                         print("yep")
                         self.t2 = Rogues.identify(Rogues,name=self.label)
-                        await self.caster.use(interaction,self.scroll,target=self.t1,target2=self.t2)
+                        print(f"{self.t1.name} and {self.t2.name}")
+                        await self.caster.use(interaction,self.scroll,target=self.t1.mem,target2=self.t2.mem)
                     self.view.stop()
                 else:
                     self.t1 = Rogues.identify(Rogues,name=self.label)
-                    await self.caster.use(interaction,self.scroll,target=self.t1)
+                    await self.caster.use(interaction,self.scroll,target=self.t1.mem)
                     for i in self.view.children:
                         i.disabled = True
                     await interaction.edit_original_message(embed=self.embed,view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"An error occured: {e}")
+                print(f"538 An error occured: {e}")
     #@staticmethod
     class Aiming(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scroll=None,caster=None,embed=None):
@@ -543,17 +548,27 @@ class Rogues(commands.Cog):
             self.oginter = oginter
             self.skip = False
             self.embed = embed
-            self.test = ":P"
-            print(self.test)
+            self.test = None
             for i in players:
                 if self.scroll.scrollType == "Offensive" and i.name == self.caster.name:
                     print("same same")
                 else:
-                    self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),skip=self.skip,embed=self.embed))
+                    self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=self.embed))
+        def getT(self):
+            print(self.test.name)
+            return self.test
+        def setT(self,target:str):
+            self.test = Rogues.identify(Rogues,name=target)
+            print(self.test.name)
+        def aimCheck(self):
+            if self.test!=None:
+                return True
+            else:
+                return False
         async def on_timeout(self): # Disable all items in the view when it times out
             for i in self.children:
                 i.disabled = True
-                print(f"{i.label} disabled. Reacts")
+                print(f"{i.label} disabled. Aiming")
             self.embed.title = "Failed to choose a target in time."
             self.embed.description = "You did not select a target in time. Please try again."
             await self.oginter.edit_original_message(embed=self.embed,view=self)
@@ -700,7 +715,7 @@ class Player:
         else:
             print(f"Something went wrong when dealing scrolls to {self.name}")
     async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None):
-        print("failed here")
+        print("use scroll?")
         if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
             await spell.action(interaction,target,target2)
             return
@@ -710,7 +725,6 @@ class Player:
         else:
             await spell.action(interaction)
             return
-        #await interaction.send("That was not a valid name for a scroll that you own.",ephemeral=True)
 
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     scrollName = ""
@@ -840,7 +854,12 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     return
             case "call lightning": # target two entities or one entity twice
                 print(f"{interaction.user} casted {self.scrollName}")
-                same = False
+                if target2 == None:
+                    same = True
+                else:
+                    same = False
+                if same:
+                    await Rogues.reactCheck(Rogues,interaction,)
                 if target2!=None:
                     if victim == v2:
                         same = True
