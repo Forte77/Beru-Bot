@@ -155,9 +155,9 @@ class Rogues(commands.Cog):
             player.addScroll(dealt) # add the scroll to the player's hand
     @commands.command()
     @commands.check(is_me)
-    async def reset(self,ctx,member):
+    async def reset(self,ctx,member:nextcord.Member):
         print(member)
-        redo = self.identify(name=member)
+        redo = self.identify(name=member.name)
         print(isinstance(redo,Player))
         redo.turnDone = False
     @commands.command()
@@ -406,6 +406,7 @@ class Rogues(commands.Cog):
             self.cast=cast
         async def callback(self,interaction:nextcord.Interaction):
             try:
+                await interaction.response.defer()
                 for i in self.scrolls:
                     if self.label == i.scrollName:
                         spell = i
