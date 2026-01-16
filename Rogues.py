@@ -36,6 +36,7 @@ class Rogues(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
     async def make(self,interaction:nextcord.Interaction):
+        print("here")
         try:
             msg = await interaction.original_message()
             global category
@@ -219,6 +220,8 @@ class Rogues(commands.Cog):
         if ready==False:
             await interaction.response.send_message("A game has already started")
             return
+        else:
+            await interaction.response.defer()
         ready = False # set the ready check to false since the game has started
         people = set()
         people.add(interaction.user)
@@ -233,22 +236,28 @@ class Rogues(commands.Cog):
         if member8 != None: people.add(member8)
         if len(people) < 4:
             await interaction.response.send_message("Not enough players to start the game. Please find more friends.")
+        print("made")
         global guild
         guild = interaction.guild
         global playerRole
         playerRole = await guild.create_role(name="player")
         global everyone
         everyone = guild.default_role
+        print("it")
         j=1
         for i in people:
             #print(i)
             await self.addPlayer(i,j)
             j+=1
+        print("to")
         await interaction.response.send_message("Setting up Game...")
         # Need to get the bot to create the channels.
+        print("right")
         self.Deck()
+        print("over")
         await self.make(interaction)
         # Need to add Map related stuff
+        print(".")
         await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
         for i in players:
             self.deal(i)
@@ -267,10 +276,8 @@ class Rogues(commands.Cog):
         await safeRoom.delete()
         await safeVC.delete()
         await category.delete()
-        deck.clear()
-        for i in players:
-            i.hand.clear()
-        players.clear()
+        del deck
+        del players
         print("GAME OVER")
     @teardown.error
     async def errorhandler(ctx:nextcord.Interaction,error):
@@ -524,7 +531,7 @@ class Rogues(commands.Cog):
                     print(self.t1.name)
                     if self.label == "Same person":
                         print("yep same")
-                        await self.caster.use(interaction,self.scroll,target=self.t1.mem)
+                        await self.caster.use(interaction,self.scroll,target=self.t1.mem,same=True)
                     else:
                         print("yep")
                         self.t2 = Rogues.identify(Rogues,name=self.label)
@@ -715,12 +722,15 @@ class Player:
             print("Hand full...add code later")
         else:
             print(f"Something went wrong when dealing scrolls to {self.name}")
-    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None):
+    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None,same=False):
         print("use scroll?")
         if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
             await spell.action(interaction,target,target2)
             return
         elif spell.aim and target!=None:
+            if same:
+                await spell.action(interaction,target,same=same)
+                return
             await spell.action(interaction,target)
             return
         else:
@@ -752,7 +762,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.aim2 = aim2
     def toPrint(self):
         print(f"{self.scrollName}. Type: {self.scrollType}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
-    async def action(self,interaction:nextcord.Interaction,target=None,target2=None):
+    async def action(self,interaction:nextcord.Interaction,target=None,target2=None,same:bool=False):
         caster = Rogues.identify(Rogues,interaction.user)# Can set all these up outside each individual action.
         if target!=None:
             victim = Rogues.identify(Rogues,target)
@@ -855,23 +865,14 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     return
             case "call lightning": # target two entities or one entity twice
                 print(f"{interaction.user} casted {self.scrollName}")
-                if target2 == None:
-                    same = True
-                else:
-                    same = False
-                if same:
-                    await Rogues.reactCheck(Rogues,interaction,)
                 if target2!=None:
-                    if victim == v2:
-                        same = True
-                        await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=same,counter=self.counter)
-                    else:
-                        await Rogues.reactCheck(Rogues,interaction,victim,caster,self,v2,counter=self.counter)
-                elif target != None: # making sure there even is a target
-                    await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=True,counter=self.counter)
+                    await Rogues.reactCheck(Rogues,interaction,victim,caster,self,counter=self.counter,block=self.block,avoid=self.avoid)
+                    await Rogues.reactCheck(Rogues,interaction,victim,caster,self,counter=self.counter,block=self.block,avoid=self.avoid)
+                elif target2 == None or same: # making sure there even is a target
+                    await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=same,counter=self.counter,block=self.block,avoid=self.avoid)
                 else: # if there's no target
                     print(self.scrollName)
-                    await interaction.send("You need to target ONE person with this scroll. Either yourself or another player in the same room.")
+                    await interaction.send("You need to target at least ONE person with this scroll.")
                     return
             case "dragon breath": # can't be blocked
                 print(f"{interaction.user} casted {self.scrollName}")
