@@ -275,7 +275,11 @@ class Rogues(commands.Cog):
         await safeRoom.delete()
         await safeVC.delete()
         await category.delete()
+        print("g")
+        global deck
         del deck
+        print("o")
+        global players
         del players
         print("GAME OVER")
     @teardown.error
@@ -436,7 +440,7 @@ class Rogues(commands.Cog):
                             if check==False:
                                 self.victim.reacting = False
                             else:
-                                check = False
+                                check = False 
                         case "counter":
                             await self.victim.use(interaction,spell,self.caster)
                             await Rogues.damage(Rogues,self.victim,True)
@@ -458,7 +462,8 @@ class Rogues(commands.Cog):
                             self.victim.reacting = False
                     if check:
                         self.view.setS(check=False)
-                        await Rogues.chooseScroll(self=Rogues,interaction=self.oginter,victim=self.victim,caster=self.caster,scrolls=self.scrolls,react=True,same=False)
+                        inter = self.view.getI()
+                        await Rogues.chooseScroll(self=Rogues,interaction=inter,victim=self.victim,caster=self.caster,scrolls=self.scrolls,react=True,same=False)
                 elif self.show:
                     print("show")
                     if self.victim != None:
@@ -503,7 +508,7 @@ class Rogues(commands.Cog):
                 print(f"503 An error occured: {e}")
     class Reacts(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False,same=False):
-            super().__init__(timeout=15)
+            super().__init__(timeout=45)
             self.oginter = oginter
             self.Scheck = same
             self.victim = victim
@@ -520,6 +525,9 @@ class Rogues(commands.Cog):
         def setS(self,check:bool): # setter to track Same check
             self.Scheck = check
             print(self.Scheck)
+        def getI(self): # grabbing the original view interaction
+            print("Interaction")
+            return self.oginter
         async def on_timeout(self): # Disable all items in the view when it times out
             for i in self.children:
                 i.disabled = True
@@ -608,73 +616,8 @@ class Rogues(commands.Cog):
             self.embed.title = "Failed to choose a target in time."
             self.embed.description = "You did not select a target in time. Please try again."
             await self.oginter.edit_original_message(embed=self.embed,view=self)
-    '''async def reactCheck(self,interaction:nextcord.Interaction,victim,caster,scroll,victim2=None,same=False,counter=True,block=True,avoid=True): # Figured I should just turn this into a function rather than pasting under every offensive spell.
-        if victim.reacting==True: # Players will need to react to spells one at a time.
-            await caster.mem.send(f"{victim.name} is already being attacked and is currently reacting to another spell. Give them a moment to think they are safe(max 15 sec). Then you can try again.")
-            if victim2!=None:
-                if same == False:
-                    await caster.mem.send("This scroll will still be used up if your second target is able to be hit by the attack.")
-                else:
-                    return
-                if victim2.reacting == True and same==False:
-                    await caster.mem.send(f"Both {victim.name} and {victim2.name} are currently being attacked by others. Please wait at most 15 seconds and try again.")
-                    return
-                elif victim2.reacting ==False and same ==False:
-                    await self.reactCheck(self=Rogues,interaction=interaction,victim=victim2,caster=caster,scroll=scroll,counter=counter,block=block,avoid=avoid)
-            return
-        else:
-            await caster.mem.send("You have used your scroll and ended your turn")
-            hit = True # check to see if it automatically hits.
-            reaction = [] # array of the options the victim has.
-            if victim.hand != []:
-                await victim.mem.send(f"You are being targetted by {caster.name} who casted {scroll.scrollName}.\nYou have 15 seconds to react if you have any scrolls that can save you.")
-                for i in victim.hand:
-                    if i.scrollType == "Defensive" or i.scrollName == "Za Warudo": # check if they have a defensive spell or Za Warudo cuz it's special.
-                        if i.scrollName == "Counter" and scroll.counter == False:
-                            continue
-                        if "shield"in i.flavor and scroll.block==False:
-                            continue
-                        if "avoid" in i.flavor and scroll.avoid==False:
-                            continue
-                        reaction.append(i)
-                        if len(reaction)==1:
-                            await victim.mem.send(f"You have at least one scroll in your hand that can be used to save you from this spell. Which scroll will you use?")
-                            hit = False # pause the hit
-            else:
-                await victim.mem.send("You have no scrolls to defend with. git gud")
-                hit = True
-            if hit:
-                await victim.mem.send(f"You have no scrolls that can save you from this spell. Big rip")
-                if same ==True:
-                    await Rogues.damage(Rogues,victim)
-                await Rogues.damage(Rogues,victim)
-                caster.turnDone = True
-            else:
-                if victim2 != None and same ==False:
-                    victim.reacting = True
-                    victim2.reacting = True
-                    await self.chooseScroll(self=self,interaction=interaction,victim=victim,v2=victim2,caster=caster,scrolls=reaction,react=True)
-                elif same == False:
-                    victim.reacting = True
-                    await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True)
-                    await safeRoom.send(f"{caster.name} casted {scroll.scrollName} at {victim.name}")
-                if same == True and len(reaction) == 1:
-                    victim.reacting = True
-                    await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True)
-                    await asyncio.sleep(21)
-                    await Rogues.damage(Rogues,victim)
-                elif same == True and len(reaction)>1:
-                    victim.reacting = True
-                    await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True)
-                    await asyncio.sleep(21)
-                    victim.reacting = False
-                    await self.reactCheck(self=Rogues,interaction=interaction,victim=victim,caster=caster,scroll=scroll,counter=counter,block=block,avoid=avoid)
-                caster.turnDone = True
-        if victim2!=None:
-            caster.turnDone = True
-            await self.reactCheck(self,Rogues,interaction=interaction,victim=victim2,caster=caster,scroll=scroll,counter=counter,block=block,avoid=avoid)'''
     async def reactCheck(self,interaction:nextcord.Interaction,victim,caster,scroll,same=False,counter=True,block=True,avoid=True,used=False): # Figured I should just turn this into a function rather than pasting under every offensive spell.
-        if victim.reacting==True: # Players will need to react to spells one at a time.
+        if victim.reacting==True: # Players will need to react to spells one at a time.  
             await caster.mem.send(f"{victim.name} is already being attacked and is currently reacting to another spell. Give them a moment to think they are safe(max 15 sec). Then you can try again.")
             if same:
                 await caster.mem.send(f"The {scroll.scrollName} scroll will not be used since you only targetted {victim.name}")
@@ -683,8 +626,11 @@ class Rogues(commands.Cog):
                 if used:
                     await caster.mem.send(f"You second target, {victim.name}, is already being attacked and will not be targetted by this spell.")
                 else:
-                    await caster.mem.send(f"The {scroll.scrollName} scroll will still be used up if your second target is able to be hit by the attack.")
-                    return False
+                    if scroll.aim2:
+                        await caster.mem.send(f"The {scroll.scrollName} scroll will still be used up if your second target is able to be hit by the attack.")
+                    else:
+                        await caster.mem.send(f"The {scroll.scrollName} scroll will be used.")
+                    return False      
         else:
             await caster.mem.send("You have used your scroll and ended your turn")
             hit = True # check to see if it automatically hits.
@@ -816,7 +762,10 @@ class Player:
             await spell.action(interaction,target)
             return
         else:
-            await spell.action(interaction)
+            if target!=None:
+                await spell.action(interaction,target)
+            else:
+                await spell.action(interaction)
             return
 
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
