@@ -29,6 +29,7 @@ evil = False
 players = []
 bads = 0
 start = False
+RC = 0
 # Need a function to check if there is a game running already
 async def ongoing(interaction:nextcord.Interaction):
     return ready == False
@@ -47,6 +48,7 @@ class Rogues(commands.Cog):
             print(f"Category {category.name} created successfully!")
             global safeRoom
             safeRoom = await guild.create_text_channel(name="safe-room",category=category,position=0,topic="Room for the party to discuss and make decisions",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)})
+            Room(name="Safe Room",id=0,exit=False,roomType="safe")
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
             #await safeRoom.send("Please have all party members join the SafeVC")
@@ -156,6 +158,39 @@ class Rogues(commands.Cog):
             dealt = random.choice(deck) # randomly pick a scroll
             deck.remove(dealt) # remove the scroll from the deck
             player.addScroll(dealt) # add the scroll to the player's hand
+    async def createRoom(self,exit=False):
+        RC+=1
+        if exit:
+            if difficulty==0:
+                room = Room(name=f"Magic{RC}",id=RC,exit=True,roomType="Loot")
+            else:
+                room = Room(name=f"Exit{RC}",id=RC,exit=True,roomType="Exit")
+        else:
+            match (difficulty): #unsure how I want to tackle the exit situation.
+                case 0:
+                    types = ["monster","loot","trap"]
+                    weight = [0.15,0.80,0.05]
+                    room = random.choices(types,weight,k=1)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
+                case 1:
+                    types = ["monster","loot","trap"]
+                    weight = [0.4,0.4,0.2]
+                    room = random.choices(types,weight,k=1)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room) 
+                case 2:
+                    types = ["monster","loot","trap"]
+                    weight = [0.33,0.34,0.33,]
+                    room = random.choices(types,weight,k=1)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room) 
+                case 3:
+                    types = ["monster","loot","trap"]
+                    weight = [0.4,0.20,0.4]
+                    room = random.choices(types,weight,k=1)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
+                case _:
+                    await safeRoom.send("Something went wrong creating a room")
+        await guild.create_text_channel(name=room.name,category=category,position=1,topic="A random room in the dungeon.",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)})
+        return room
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
@@ -258,6 +293,8 @@ class Rogues(commands.Cog):
         # Need to add Map related stuff
         print(".")
         await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
+        global difficulty
+        difficulty = 0
         for i in players:
             self.deal(i)
     @RogueGame.error
@@ -378,6 +415,25 @@ class Rogues(commands.Cog):
     async def info(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
         await self.chooseScroll(interaction,caster=caster,scrolls=caster.hand,info=True)
+    @player.subcommand(name="move",description="Move to a new room.")
+    async def move(self,interaction:nextcord.Interaction):
+        #Make view and buttons for the possible next rooms
+        #change movement to false and set up system so that when all players end their turn they all reset turn(dungeon does it's turn first but so far no enemies yet.)
+        #cannot be used if in a monster room and cleared is false
+        #establish prev next and new current room for player
+        #edit create room to follow blueprint?
+        caster = self.identify(interaction.user)
+
+        if caster.nRoom!=None:
+            caster.movement = False
+            #move
+        else:
+            await interaction.response.send_message("There are no further rooms that extended beyond the current room. If this is an exit room please use the delve command to vote to go to the next floor.")
+    @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
+    async def delve(self,interaction:nextcord.Interaction):
+        #Vote amongst all players(majority pass)
+        #Mini teardown to delete rooms that were created. reset RC
+        #Remove shields from all players
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
@@ -751,7 +807,8 @@ class Player:
     dCount = 0
     nRoom = []
     pRoom = None
-    room = None
+    cRoom = "Safe Room"
+    movement = True
     def __init__(self,player:nextcord.Member,uid):
         if player.nick!=None:self.name = player.nick
         else: self.name = player.name
@@ -768,9 +825,10 @@ class Player:
         self.shieldDis="None"
         self.reacting = False
         self.soul = ""
-        nRoom = []
-        pRoom = None
-        room = None #Change to saferoom later
+        self.nRoom = []
+        self.pRoom = None
+        self.cRoom = "Safe Room"
+        self.movement = True
     def addScroll(self, scroll):
         if len(self.hand)<5:
             self.hand.append(scroll)
@@ -1013,6 +1071,25 @@ class Enemy:
 class Room:
     id = None
     name = None
+    next = []
+    prev = []
+    exit = False
+    guests = []
+    roomType = "" # monster loot trap exit
+    def __init__(self,name,id,exit,roomType):
+        self.id = id
+        self.name = name
+        self.exit = exit
+        self.roomType = roomType
+    def guestList(self):
+        return self.guests
+    def getNext(self):
+        return self.next
+    def setNext(self,rooms):
+        self.next=rooms
+    def setPrev(self,rooms):
+        self.prev=rooms
+    
 # list of rooms I can randomize and then in second half I add the exit room to the list
 
 #setup done outside the class
