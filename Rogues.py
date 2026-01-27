@@ -61,6 +61,22 @@ class Room:
         self.next=rooms
     def setPrev(self,rooms):
         self.prev=rooms
+    def event(self):
+        match (self.roomType):
+            case "Safe":
+                # Event for Safe room will only be triggered as a result from delve moving to a new floor
+            case "Loot":
+                # Event for rooms with a chest in them
+            case "Monster":
+                # Event for rooms with an enemy in them
+            case "Exit":
+                # Event for the Exit Rooms
+            case "Magic":
+                # Event for the Exit Rooms in the beginning
+            case "Evil":
+                # Event for THE room. Implement later
+            case _:
+                print("Something went wrong running the events for a room.")
 class Player:
     name="player"
     uid=0
@@ -149,7 +165,7 @@ class Rogues(commands.Cog):
             global safeRoom
             safeRoom = await guild.create_text_channel(name="safe-room",category=category,position=0,topic="Room for the party to discuss and make decisions",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)})
             global safe
-            safe = Room(name="Safe Room",id=0,exit=False,roomType="safe")
+            safe = Room(name="Safe Room",id=0,exit=False,roomType="Safe")
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
             #await safeRoom.send("Please have all party members join the SafeVC")
@@ -528,17 +544,15 @@ class Rogues(commands.Cog):
     @player.subcommand(name="move",description="Move to a new room.")
     async def move(self,interaction:nextcord.Interaction):
         #change movement to false and set up system so that when all players end their turn they all reset turn(dungeon does it's turn first but so far no enemies yet.)
-        #establish prev next and new current room for player
-        #edit create room to follow blueprint?
         caster = self.identify(interaction.user)
         if caster.movement is False:
             await interaction.response.send_message("You have already moved in this turn you will need to end your turn before you can move on.")
             return
-        if caster.cRoom.roomType == "monster":
+        if caster.cRoom.roomType == "Monster":
             if caster.cRoom.cleared == False:
                 await interaction.response.send_message("You must deal with the monster in the room first.")
                 return
-        if caster.cRoom.roomType == "loot":
+        if caster.cRoom.roomType == "Loot":
             if caster.cRoom.cleared == False:
                 await interaction.response.send_message("Might want to collect the loot before leaving.")
                 return
@@ -1117,6 +1131,12 @@ class Rogues(commands.Cog):
                 match floornum:
                     case 1:
                         #bp for first floor
+                        roomA = self.createRoom()
+                        roomB = self.createRoom()
+                        roomC = self.createRoom(exit=True)
+                        safe.next = [roomA,roomB]
+                        roomA.next = [roomC]
+                        roomB.next = [roomC]
                         print(floornum)
                     case 2:
                         #bp for second floor
