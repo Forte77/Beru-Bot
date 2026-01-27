@@ -1,5 +1,6 @@
-# TLDR of how this came to be. My friend had an idea for a game that we worked on in the past. Making it into a card game.
-# I realized on the playtest for the card game that it kind of needed a DM. I figured I could make a discrod bot to manage the stuff I had to manage for the playtest and here we are. 
+# TLDR of how this came to be. My friend had an idea for a game that we worked on in the past. For a game design course I was taking I was making it into a card game.
+# I realized on the playtest for the card game that it kind of needed a DM. I figured I could make a discrod bot to manage the stuff I had to manage for the playtest.
+# I thought this would be a good way to learn/get back into coding and here we are. 
 import nextcord
 import asyncio
 import random
@@ -30,14 +31,113 @@ players = []
 bads = 0
 start = False
 RC = 0
+vote = 0
+floor = []
+floornum = 1
 # Need a function to check if there is a game running already
 async def ongoing(interaction:nextcord.Interaction):
     return ready == False
+class Room:
+    id = None
+    name = None
+    channel = nextcord.TextChannel
+    next = []
+    prev = []
+    exit = False
+    guests = []
+    roomType = "" # monster loot trap exit
+    cleared = False
+    def __init__(self,name,id,exit,roomType):
+        self.id = id
+        self.name = name
+        self.exit = exit
+        self.roomType = roomType
+        self.cleared = False
+    def guestList(self):
+        return self.guests
+    def getNext(self):
+        return self.next
+    def setNext(self,rooms):
+        self.next=rooms
+    def setPrev(self,rooms):
+        self.prev=rooms
+class Player:
+    name="player"
+    uid=0
+    hp = 5
+    hpDis = ""
+    shield = 0
+    shieldDis = "None"
+    hand = [] # Players can hold a max of 5 scrolls
+    handDis = ""
+    Rogue = False
+    turnDone = False
+    mem = nextcord.Member # incase I need anything specific from discords member class
+    reacting = False
+    soul = ""
+    dodge = False
+    dCount = 0
+    pRoom = None
+    cRoom = None
+    nRoom = None
+    movement = True
+    delve = False
+    def __init__(self,player:nextcord.Member,uid):
+        if player.nick!=None:self.name = player.nick
+        else: self.name = player.name
+        self.mem = player
+        self.uid = uid
+        self.hand = []
+        self.hp = 5
+        self.shield = 0
+        self.turnDone = False
+        self.handDis = ""
+        self.hpDis = ""
+        self.shieldDis="None"
+        self.reacting = False
+        self.soul = ""
+        self.pRoom = None
+        self.movement = True
+        self.delve = False
+    def setRooms(self):
+        self.cRoom = safe
+        print("safe")
+        self.nRoom = self.cRoom.next
+        print("set")
+    async def addScroll(self, scroll,interaction:nextcord.Interaction=None,gifter=None):
+        if len(self.hand)<5:
+            self.hand.append(scroll)
+            print(f"{scroll.scrollName} added to {self.name}'s hand")
+        elif len(self.hand)==5:
+            msg = await self.mem.send("You have the full amount of scrolls. You will need to decide what to do with the extra you have just received.")
+            if gifter!=None:
+                await Rogues.chooseScroll(Rogues,interaction,self,self.hand,victim=gifter,full=True,extra=scroll,msg=msg)
+            else:
+                await Rogues.chooseScroll(Rogues,interaction,self,self.hand,full=True,extra=scroll,msg=msg)
+        else:
+            print(f"Something went wrong when dealing scrolls to {self.name}")
+    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None,same=False):
+        print("use scroll?")
+        if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
+            await spell.action(interaction,target,target2)
+            return
+        elif spell.aim and target!=None:
+            if same:
+                await spell.action(interaction,target,same=same)
+                return
+            await spell.action(interaction,target)
+            return
+        else:
+            if target!=None:
+                await spell.action(interaction,target)
+            else:
+                await spell.action(interaction)
+            return
 class Rogues(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
     async def make(self,interaction:nextcord.Interaction):
-        await interaction.response.send_message("Setting up Game...")
+        await interaction.send("Setting up Game...")
         print("here")
         try:
             msg = await interaction.original_message()
@@ -48,17 +148,20 @@ class Rogues(commands.Cog):
             print(f"Category {category.name} created successfully!")
             global safeRoom
             safeRoom = await guild.create_text_channel(name="safe-room",category=category,position=0,topic="Room for the party to discuss and make decisions",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)})
-            Room(name="Safe Room",id=0,exit=False,roomType="safe")
+            global safe
+            safe = Room(name="Safe Room",id=0,exit=False,roomType="safe")
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
             #await safeRoom.send("Please have all party members join the SafeVC")
             await safeRoom.send("This looks like a safe spot.")
             await msg.edit(content=f"You may now assemble in the {safeRoom.mention} OR VC")
         except Exception as e:
-            print(f"53 An error occured: {e}")
+            print(f"159 An error occured: {e}")
     async def addPlayer(self,player:nextcord.Member,uid):
+        print("right")
         match uid:
             case 1:
+                print("here")
                 await player.add_roles(playerRole)
                 player1 = Player(player,uid)
                 players.append(player1)
@@ -66,18 +169,22 @@ class Rogues(commands.Cog):
                 await player.add_roles(playerRole)
                 player2 = Player(player,uid)
                 players.append(player2)
+                print("here2")
             case 3:
                 await player.add_roles(playerRole)
                 player3 = Player(player,uid)
                 players.append(player3)
+                print("here3")
             case 4:
                 await player.add_roles(playerRole)
                 player4 = Player(player,uid)
                 players.append(player4)
+                print("here4")
             case 5:
                 await player.add_roles(playerRole)
                 player5 = Player(player,uid)
                 players.append(player5)
+                print("here5")
             case 6:
                 await player.add_roles(playerRole)
                 player6 = Player(player,uid)
@@ -134,14 +241,13 @@ class Rogues(commands.Cog):
         self.createScroll("Invisibility","Defensive",False,False,False,3,"If I can't see them, then they can't see me.","You can go invisible to avoid attacks or cast it preemptively to be invisible for a limited time.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/invisibility.png?raw=true") # Rogues have extra perks with invis
         self.createScroll("Magic Shield","Defensive",False,False,False,6,"No you are not the Shield Hero","Project a magical shield that will protect you from a single attack.\n*Gives 1 shield*","https://github.com/Forte77/Beru-Bot/blob/initialBeru/magicshield.png?raw=true",True) # Blocks a spell
         self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Just don't seek revenge...","Heal yourself or others.\n*Gives 1 HP*","https://github.com/Forte77/Beru-Bot/blob/initialBeru/curewounds.png?raw=true",True) # heal #
-        self.createScroll("Explosion","Offensive",False,True,False,1,"Bakuretsu Bakurestu la la la","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/explosion.png?raw=true")
-        print("check")
+        self.createScroll("Explosion","Offensive",False,True,False,1,"爆裂爆裂ラララ","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/explosion.png?raw=true")
         if evil == True:
             self.createScroll("Steal","Offensive",False,False,True,4,"Please don't steal someone's panties.","Steal a random scroll from your target","https://github.com/Forte77/Beru-Bot/blob/initialBeru/steal.png?raw=true",True) # TBD
             self.createScroll("Blood Altar","Offensive",False,False,False,3,"A fine tribute to the Gore Queen Garuda","Sap health from your enemy if damage is dealt to enemy health.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/bloodaltar.png?raw=true",True) # Sap Health if uninterupted. Won't heal if it is CBA
-        sn = 0 
+        sn = 0
         for i in deck:
-            self.serialize(i,sn) # Add serial number to the Scrolls to further help keep track of.
+            self.serialize(i,sn) # Add serial number to the Scrolls to further help keep track of. Not sure if I'll need this tbh kinda just an added precaution in case it comes in handy
             sn +=1
         print("Deck created")
     def createScroll(self,name,type,counter,block,avoid,count,flavor="If you see this I fucked up",effect="This spell does...something",image="image url here",aim=False,aim2=False): # Function to create scrolls for the game
@@ -152,12 +258,12 @@ class Rogues(commands.Cog):
             i+=1
     def serialize(self,scroll,sn):
         scroll.serial = sn
-    def deal(self, player):
+    async def deal(self, player):
         print(f"Dealing to {player.name}:")
         for i in range(0,3): # Deal 3 scrolls at the start of the game
             dealt = random.choice(deck) # randomly pick a scroll
             deck.remove(dealt) # remove the scroll from the deck
-            player.addScroll(dealt) # add the scroll to the player's hand
+            await player.addScroll(dealt) # add the scroll to the player's hand
     async def createRoom(self,exit=False):
         RC+=1
         if exit:
@@ -181,7 +287,7 @@ class Rogues(commands.Cog):
                     types = ["monster","loot","trap"]
                     weight = [0.33,0.34,0.33,]
                     room = random.choices(types,weight,k=1)
-                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room) 
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
                 case 3:
                     types = ["monster","loot","trap"]
                     weight = [0.4,0.20,0.4]
@@ -189,8 +295,18 @@ class Rogues(commands.Cog):
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
                 case _:
                     await safeRoom.send("Something went wrong creating a room")
-        await guild.create_text_channel(name=room.name,category=category,position=1,topic="A random room in the dungeon.",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)})
+        room.channel = await guild.create_text_channel(name=room.name,category=category,position=RC,topic="A random room in the dungeon.",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)})
+        floor.append(room)
         return room
+    def findRoom(self,name:str):
+        for i in floor:
+            if i.name == name:
+                return i
+    def overwrite(self,room:nextcord.TextChannel,caster:Player,block:bool=False):
+        if block:
+            room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+        else:
+            room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
@@ -204,31 +320,26 @@ class Rogues(commands.Cog):
         player = self.identify(ctx.author)
         if player2 != None:
             player2 = self.identify(player2)
-            #player2.hp = 3
-            #print(f"{player2.name}'s health has been set to 3")
         if test !=None:
             for i in deck:
                 if i.scrollName == "Call Lightning":
                     dealt = i
                     deck.remove(dealt)
-                    player.addScroll(dealt)
+                    await player.addScroll(dealt)
                     break
             for i in deck:
                 if i.scrollName == "Magic Shield":
                     dealt = i
                     deck.remove(dealt)
-                    player.addScroll(dealt)
+                    await player.addScroll(dealt)
                     break
         else:
             for i in deck:
                 if i.scrollName == "Fireball":
                     dealt = i
                     deck.remove(dealt)
-                    player.addScroll(dealt)
+                    await player.addScroll(dealt)
                     break
-            #dealt = random.choice(deck)
-            #deck.remove(dealt)
-            #player.addScroll(dealt)
     @commands.command()
     @commands.check(is_me)
     async def printDeck(self,ctx):
@@ -241,8 +352,6 @@ class Rogues(commands.Cog):
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
             await ctx.send("You're not my Master!")
-        #I'm thinking use deck command to make each scroll and the scroll class takes the variables to initialize them
-
     @nextcord.slash_command(name="rogues",description="Start the game and select the other players")
     async def RogueGame(self,interaction:nextcord.Interaction, #function to start the game
                         member1:nextcord.Member = nextcord.SlashOption(description="Another human to add to the game",required=True), # Members to be added to the game by the person who used the command.
@@ -257,6 +366,8 @@ class Rogues(commands.Cog):
         if ready==False:
             await interaction.response.send_message("A game has already started")
             return
+        else:
+            await interaction.response.defer()
         ready = False # set the ready check to false since the game has started
         people = set()
         people.add(interaction.user)
@@ -280,28 +391,27 @@ class Rogues(commands.Cog):
         everyone = guild.default_role
         print("it")
         j=1
+        print("to")
         for i in people:
-            #print(i)
+            print(i)
             await self.addPlayer(i,j)
             j+=1
-        print("to")
         # Need to get the bot to create the channels.
-        print("right")
+        print("right?")
         self.Deck()
         print("over")
-        await self.make(interaction)
         # Need to add Map related stuff
+        await self.make(interaction)
         print(".")
         await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
         global difficulty
         difficulty = 0
         for i in players:
-            self.deal(i)
+            await self.deal(i)
     @RogueGame.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCommandOptionMissing):
             await ctx.send("Not enough players.")
-
     @nextcord.slash_command(name="teardown",description="End the game")
     @application_checks.check(is_me or ongoing)    
     async def teardown(self,interaction:nextcord.Interaction):
@@ -351,7 +461,7 @@ class Rogues(commands.Cog):
     async def give(self,interaction:nextcord.Interaction,target:nextcord.Member = nextcord.SlashOption(description="Choose who to give your scroll to.",required=True)):
         caster = self.identify(interaction.user)
         victim = self.identify(target)
-        if caster == victim: 
+        if caster == victim:
             await interaction.response.send_message("You can't give yourself stuff",ephemeral=True)
         else:
             await self.chooseScroll(interaction,victim=victim,caster=caster,scrolls=caster.hand,give=True)
@@ -417,27 +527,58 @@ class Rogues(commands.Cog):
         await self.chooseScroll(interaction,caster=caster,scrolls=caster.hand,info=True)
     @player.subcommand(name="move",description="Move to a new room.")
     async def move(self,interaction:nextcord.Interaction):
-        #Make view and buttons for the possible next rooms
         #change movement to false and set up system so that when all players end their turn they all reset turn(dungeon does it's turn first but so far no enemies yet.)
-        #cannot be used if in a monster room and cleared is false
         #establish prev next and new current room for player
         #edit create room to follow blueprint?
         caster = self.identify(interaction.user)
-
+        if caster.movement is False:
+            await interaction.response.send_message("You have already moved in this turn you will need to end your turn before you can move on.")
+            return
+        if caster.cRoom.roomType == "monster":
+            if caster.cRoom.cleared == False:
+                await interaction.response.send_message("You must deal with the monster in the room first.")
+                return
+        if caster.cRoom.roomType == "loot":
+            if caster.cRoom.cleared == False:
+                await interaction.response.send_message("Might want to collect the loot before leaving.")
+                return
+        try:
+            caster.mem.disconnect()
+        except Exception as e:
+            print("User not in a VC")
         if caster.nRoom!=None:
             caster.movement = False
-            #move
+            MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
+            MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
+            moving = Rogues.mView(interaction,caster)
+            await interaction.response.send_message(embed=MyEmbed,view=moving)
         else:
-            await interaction.response.send_message("There are no further rooms that extended beyond the current room. If this is an exit room please use the delve command to vote to go to the next floor.")
+            await interaction.response.send_message("There are no further rooms that extend beyond the current room. If this is an exit room please use the delve command to vote to go to the next floor.")
     @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
     async def delve(self,interaction:nextcord.Interaction):
-        #Vote amongst all players(majority pass)
-        #Mini teardown to delete rooms that were created. reset RC
-        #Remove shields from all players
+        caster = self.identify(interaction.user)
+        vote = 0
+        caster.delve = True
+        for i in players:
+            if i.delve:
+                vote+=1
+            if i.cRoom.exit == False:
+                await interaction.response.send_message("Not all players are in the exit room. Please wait.")
+                #implement group drag here.
+        if vote >= len(players)/2:
+            await self.newFloor()
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
             await ctx.send("There isn't a game happening right now.")
+    def moving(self,fro:Room,to:Room,who:Player):
+        fro.guests.pop(who)
+        to.guests.append(who)
+        who.cRoom = to
+        who.pRoom = fro
+        who.nRoom = to.next
+        self.overwrite(to.channel,who)
+        self.overwrite(fro.channel,who,True)
     async def damage(self,victim,avoided=False):
         if victim.shield>0:
             if avoided: 
@@ -464,8 +605,39 @@ class Rogues(commands.Cog):
                 await safeRoom.send(f"{victim.name} has perished.")
                 players.pop(victim.uid)
                 victim.mem.remove_roles(playerRole)
+    class mView(nextcord.ui.View):
+        def __init__(self,oginter,caster):
+            super().__init__(timeout=60)
+            self.oginter = oginter
+            self.caster = caster
+            count = 0
+            for i in self.caster.nRoom:
+                self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(count)))
+                count+=1
+        async def on_timeout(self):
+            for i in self.children:
+                i.disabled = True
+                print(f"{i.label} disabled. Move View")
+            await self.oginter.edit_original_message(view=self)
+            self.stop()
+    class mButt(nextcord.ui.Button):
+        def __init__(self,caster,label="",style=nextcord.ui.Button.style,custom_id=None):
+            super().__init__(label=label,style=style,custom_id=custom_id)
+            self.caster
+        async def callback(self,interaction:nextcord.Interaction):
+            if self.caster.cRoom == safe:
+                safeRoom.overwrites = {self.caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+                self.caster.pRoom = safe
+            else:
+                self.caster.pRoom = self.caster.cRoom
+            room = Rogues.findRoom(self.label)
+            Rogues.moving(Rogues,self.caster.cRoom,room,self.caster)
+            for i in self.view.children:
+                i.disabled =True
+            await interaction.edit_original_message(view=self.view)
+            self.view.stop()
     class Butt(nextcord.ui.Button):
-        def __init__(self,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False,info=False,label="",style=nextcord.ui.Button.style,custom_id=None):
+        def __init__(self,scrolls,victim=None,caster=None,react=False,give=False,show=False,scroll=None,cast=False,info=False,full=False,msg=None,label="",style=nextcord.ui.Button.style,custom_id=None):
             super().__init__(label=label,style=style,custom_id=custom_id)
             self.scrolls = scrolls
             if victim != None:
@@ -477,16 +649,28 @@ class Rogues(commands.Cog):
             self.show=show
             self.cast=cast
             self.info=info
+            self.scroll = scroll
+            self.full=full
+            if full:
+                self.msg = msg
         async def callback(self,interaction:nextcord.Interaction):
             try:
                 check = self.view.getS()
                 await interaction.response.defer()
                 for i in self.scrolls:
                     if self.label == i.scrollName:
-                        spell = i
-                        print(f"Breaking loop. Spell is: {spell.scrollName}")
-                        print(f"{spell.scrollName} aim values are {spell.aim} and {spell.aim2}")
-                        break
+                        if i.copy == self.scroll.copy:
+                            spell = i
+                            print(f"Breaking loop. Spell is: {spell.scrollName} copy #{spell.copy}")
+                            print(f"{spell.scrollName} aim values are {spell.aim} and {spell.aim2}")
+                            break
+                    elif self.full:
+                        if self.label == self.view.extra.scrollName:
+                            spell = self.view.extra
+                            print(f"Breaking loop. Spell is the extra: {spell.scrollName} copy #{spell.copy}")
+                            break
+                print(f"Full is {self.full}")                 
+                print(f"give is {self.give}") 
                 if self.react:
                     print("react")
                     match str.lower(self.label):
@@ -535,23 +719,27 @@ class Rogues(commands.Cog):
                     else:
                         await safeRoom.send(f"{self.caster.name} has shown you all that they own a {self.label} scroll")
                         await self.caster.mem.send(f"You showed everyone in {safeRoom} your {self.label} scroll")
-                elif self.give:
+                elif self.give == True and self.full == False:
+                    print(self.full)
                     print("give")
-                    for i in self.caster.hand:
-                        if i.scrollName == self.label:
-                            await self.victim.mem.send(f"{self.caster.name} is giving you their {self.label} scroll")
-                            self.caster.hand.remove(i)
-                            self.victim.addScroll(i)
-                            await self.caster.mem.send(f"You are giving {self.victim.name} your {self.label} scroll")
-                            self.disabled = True
-                            inter = self.view.getI()
-                            await inter.edit_original_message(view=self.view)
-                            break
+                    if len(self.victim.hand) == 5:
+                        await self.caster.mem.send("Your target already has the max amount of scrolls they will need to decide which scroll to give up to accept your gift.")
+                        await self.victim.addScroll(spell,interaction,self.caster)
+                    else:
+                        await self.victim.mem.send(f"{self.caster.name} is giving you their {self.label} scroll")
+                        self.caster.hand.remove(spell)
+                        await self.victim.addScroll(spell,interaction)
+                        await self.caster.mem.send(f"You are giving {self.victim.name} your {self.label} scroll")
+                        self.disabled = True
+                        inter = self.view.getI()
+                        await inter.edit_original_message(view=self.view)
+                        self.give = False
                 elif self.info:
                     for i in self.caster.hand:
                         if i.scrollName == self.label:
-                            await Rogues.inspect(Rogues,interaction,i)
-                            break
+                            if i.copy == self.scroll.copy:
+                                await Rogues.inspect(Rogues,interaction,i)
+                                break
                 elif self.cast:
                     print("cast")
                     MyEmbed = nextcord.Embed(title = "Who will be your victim(s)?", description = "These are the other Players in the room",color = nextcord.Colour(0xFFD700))
@@ -567,6 +755,74 @@ class Rogues(commands.Cog):
                     else:
                         print("i'm dumb")
                         await self.caster.use(interaction,spell)
+                elif self.full:
+                    if self.give:
+                        print("754")
+                        if spell in self.caster.hand:
+                            self.caster.hand.remove(spell)
+                            await self.caster.addScroll(self.view.extra)
+                        elif self.victim !=None:
+                            self.victim.hand.remove(spell)
+                            print("removed from gifter")
+                        for i in self.view.children:
+                            i.disabled = True
+                            print("full give disabled")
+                        await self.msg.edit(content=self.msg.content,view=self.view)
+                        print("break here?")
+                        MyEmbed = nextcord.Embed(title = "Who will receive your scroll?", description = "These are the other Players.",color = nextcord.Colour(0xFFD700))
+                        for i in players:
+                            if i.name == self.caster.name:
+                                print("not you")
+                            else:
+                                MyEmbed.add_field(name=f"Player {i.uid}",value=i.name,inline=True)
+                        recip = Rogues.Aiming(interaction,scroll=spell,caster=self.caster,embed=MyEmbed,full=True,msg=self.msg)
+                        await self.msg.edit(content=self.msg.content,embed=MyEmbed,view=recip)
+                        self.view.stop()
+                        return
+                    if self.label != "Give":
+                        if spell == self.view.extra:
+                            if self.victim != None:
+                                self.victim.mem.send(f"{self.caster.name} has rejected your gift and sent it back to the dungeon.")
+                                self.msg.edit(content=f"You have rejected {self.victim.name}'s gift and sent it back to the dungeon.")
+                                self.view.msg.content = f"You have rejected {self.victim.name}'s gift and sent it back to the dungeon."
+                                self.victim.hand.remove(spell)
+                                deck.append(spell)
+                                for i in self.view.children:
+                                    i.disabled = True
+                                    await self.msg.edit(view=self.view)
+                                self.view.stop()
+                                return
+                        print("no give")
+                        if self.victim !=None:
+                            self.victim.hand.remove(self.view.extra)
+                            print("removed from gifter")
+                        deck.append(spell)
+                        if spell in self.caster.hand:
+                            self.caster.hand.remove(spell)
+                            await self.caster.addScroll(self.view.extra)
+                            await self.msg.edit(content="You have returned one of your scrolls to the dungeon.")
+                            self.view.msg.content="You have returned one of your scrolls to the dungeon."
+                            for i in self.view.children:
+                                i.disabled = True
+                                print("Give button disable")
+                            await self.msg.edit(view=self.view)
+                            self.view.stop()
+                            return
+                        else:
+                            if self.victim !=None:
+                                self.victim.hand.remove(spell)
+                                print("removed from gifter")
+                            await self.msg.edit(content="You have returned the extra scroll to the dungeon.")
+                            self.view.msg.content="You have returned one of your scrolls to the dungeon."
+                            for i in self.view.children:
+                                i.disabled = True
+                            await self.msg.edit(view=self.view)
+                            self.view.stop()
+                            return
+                    else:
+                        print("give was selected")
+                        await Rogues.chooseScroll(Rogues,interaction,self.caster,self.scrolls,victim=self.victim,give=True,full=True,extra=self.view.extra,msg=self.msg)
+                        return
                 if self.cast==False:
                     for i in self.view.children:
                         i.disabled = True
@@ -574,9 +830,9 @@ class Rogues(commands.Cog):
                     await interaction.edit_original_message(view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"503 An error occured: {e}")
+                print(f"799 An error occured: {e}")
     class Reacts(nextcord.ui.View):
-        def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False,info=False,same=False):
+        def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False,info=False,same=False,full=False,extra=None,msg=None):
             super().__init__(timeout=45)
             self.oginter = oginter
             self.Scheck = same
@@ -585,29 +841,48 @@ class Rogues(commands.Cog):
             self.scrolls = scrolls
             self.info = info
             self.react = react
+            self.full = full
             for i in scrolls:
-                self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,show=show,cast=cast,info=info,label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=str(i.serial)))
+                if full:
+                    self.extra = extra
+                    self.msg = msg
+                    self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,scroll=i,show=show,full=full,msg=msg,cast=cast,info=info,label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=str(i.serial)))
+                else:
+                    self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,scroll=i,show=show,full=full,cast=cast,info=info,label=i.scrollName,style=nextcord.ButtonStyle.green,custom_id=str(i.serial)))
+            if full:
+                self.extra = extra
+                self.msg = msg
+                self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,show=show,msg=self.msg,cast=cast,info=info,full=full,label=extra.scrollName,style=nextcord.ButtonStyle.blurple,custom_id=str(79)))
+                if give==False:
+                    self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,msg=self.msg,show=show,cast=cast,info=info,full=full,label="Give",style=nextcord.ButtonStyle.red,custom_id=str(80)))
             if react:
                 self.add_item(Rogues.Butt(scrolls=scrolls,react=react,give=give,show=show,cast=cast,info=info,label="Take the hit",style=nextcord.ButtonStyle.red,custom_id=str(77)))
         def getS(self): # getter to track Same check
-            print(self.Scheck)
+            print(f"same is {self.Scheck}")
             return self.Scheck
         def setS(self,check:bool): # setter to track Same check
             self.Scheck = check
-            print(self.Scheck)
+            print(f"same is set to {self.Scheck}")
         def getI(self): # grabbing the original view interaction
-            print("Interaction")
+            print("get Interaction")
             return self.oginter
         async def on_timeout(self): # Disable all items in the view when it times out
-            for i in self.children:
-                i.disabled = True
-                print(f"{i.label} disabled. Reacts")
-            await self.oginter.edit_original_message(view=self)
-            if self.Scheck and self.react:
-                await Rogues.chooseScroll(self=Rogues,interaction=self.oginter,victim=self.victim,caster=self.caster,scrolls=self.scrolls,react=True,same=False)
-            self.stop()
+            if self.full:
+                for i in self.children:
+                    i.disabled = True
+                    print(f"{i.label} disabled. fullReacts")
+                await self.msg.edit(content=self.msg.content,view=self)
+                self.stop()
+            else:
+                for i in self.children:
+                    i.disabled = True
+                    print(f"{i.label} disabled. Reacts")
+                await self.oginter.edit_original_message(view=self)
+                if self.Scheck and self.react:
+                    await Rogues.chooseScroll(self=Rogues,interaction=self.oginter,victim=self.victim,caster=self.caster,scrolls=self.scrolls,react=True,same=False)
+                self.stop()
     class AimButt(nextcord.ui.Button):
-        def __init__(self,scroll=None,caster=None,label="",style:nextcord.ui.Button.style=None,custom_id=None,embed=None):
+        def __init__(self,scroll=None,caster=None,label="",style:nextcord.ui.Button.style=None,custom_id=None,embed=None,full=False,msg=None):
             super().__init__(label=label,style=style,custom_id=custom_id)
             self = Rogues.AimButt
             self.scroll = scroll
@@ -615,46 +890,57 @@ class Rogues(commands.Cog):
             self.t1 = None
             self.t2 = None
             self.embed= embed
+            self.full = full
+            self.msg = msg
         async def callback(self,interaction:nextcord.Interaction):
-            try:
-                await interaction.response.defer()
-                print("40")
-                if self.scroll.aim2 and not self.view.aimCheck():
-                    self.t1 = Rogues.identify(Rogues,name=self.label)
-                    self.disabled = True
-                    self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78),embed=self.embed))
-                    print("did the embed work?")
-                    await interaction.edit_original_message(embed=self.embed,view=self.view)
-                    self.view.setT(target=self.label)
-                    print("saving target 1?")
-                    return
-                elif self.scroll.aim2 and self.view.aimCheck:
-                    print("hi2")
-                    self.t1 = self.view.getT()
-                    print(self.t1.name)
-                    if self.label == "Same person":
-                        print("yep same")
-                        await self.caster.use(interaction,self.scroll,target=self.t1.mem,same=True)
+            if self.full:
+                self.t1 = Rogues.identify(Rogues,name=self.label)
+                await self.t1.addScroll(self.scroll)
+                for i in self.view.children:
+                    i.disabled = True
+                await self.msg.edit(content=f"You have given away the scroll to {self.label}",embed=self.embed,view=self.view)
+                self.view.stop()
+                return
+            else:
+                try:
+                    await interaction.response.defer()
+                    print("40")
+                    if self.scroll.aim2 and not self.view.aimCheck():
+                        self.t1 = Rogues.identify(Rogues,name=self.label)
+                        self.disabled = True
+                        self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78),embed=self.embed))
+                        print("did the embed work?")
+                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        self.view.setT(target=self.label)
+                        print("saving target 1?")
+                        return
+                    elif self.scroll.aim2 and self.view.aimCheck:
+                        print("hi2")
+                        self.t1 = self.view.getT()
+                        print(self.t1.name)
+                        if self.label == "Same person":
+                            print("yep same")
+                            await self.caster.use(interaction,self.scroll,target=self.t1.mem,same=True)
+                        else:
+                            print("yep")
+                            self.t2 = Rogues.identify(Rogues,name=self.label)
+                            print(f"{self.t1.name} and {self.t2.name}")
+                            await self.caster.use(interaction,self.scroll,target=self.t1.mem,target2=self.t2.mem)
+                        for i in self.view.children:
+                            i.disabled = True
+                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        self.view.stop()
                     else:
-                        print("yep")
-                        self.t2 = Rogues.identify(Rogues,name=self.label)
-                        print(f"{self.t1.name} and {self.t2.name}")
-                        await self.caster.use(interaction,self.scroll,target=self.t1.mem,target2=self.t2.mem)
-                    for i in self.view.children:
-                        i.disabled = True
-                    await interaction.edit_original_message(embed=self.embed,view=self.view)
-                    self.view.stop()
-                else:
-                    self.t1 = Rogues.identify(Rogues,name=self.label)
-                    await self.caster.use(interaction,self.scroll,target=self.t1.mem)
-                    for i in self.view.children:
-                        i.disabled = True
-                    await interaction.edit_original_message(embed=self.embed,view=self.view)
-                    self.view.stop()
-            except Exception as e:
-                print(f"577 An error occured: {e}")
+                        self.t1 = Rogues.identify(Rogues,name=self.label)
+                        await self.caster.use(interaction,self.scroll,target=self.t1.mem)
+                        for i in self.view.children:
+                            i.disabled = True
+                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        self.view.stop()
+                except Exception as e:
+                    print(f"902 An error occured: {e}")
     class Aiming(nextcord.ui.View):
-        def __init__(self,oginter:nextcord.Interaction,scroll=None,caster=None,embed=None):
+        def __init__(self,oginter:nextcord.Interaction,scroll=None,caster=None,embed=None,full=False,msg=None):
             super().__init__(timeout=60)
             self.scroll = scroll
             self.caster = caster
@@ -662,11 +948,18 @@ class Rogues(commands.Cog):
             self.skip = False
             self.embed = embed
             self.test = None
-            for i in players:
-                if self.scroll.scrollType == "Offensive" and i.name == self.caster.name:
-                    print("same same")
-                else:
-                    self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=self.embed))
+            if full:
+                for i in players:
+                    if i.name == self.caster.name:
+                        print("same same")
+                    else:
+                        self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=self.embed,full=full,msg=msg))
+            else:
+                for i in players:
+                    if self.scroll.scrollType == "Offensive" and i.name == self.caster.name:
+                        print("same same")
+                    else:
+                        self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=self.embed))
         def getT(self): # getter to track 1st Target
             print(self.test.name)
             return self.test
@@ -742,9 +1035,13 @@ class Rogues(commands.Cog):
                         return True
                 caster.turnDone = True
             return True
-    async def chooseScroll(self,interaction:nextcord.Interaction,caster,scrolls,victim=None,react=False,show=False,give=False,cast=False,same=False,info=False):
+    async def chooseScroll(self,interaction:nextcord.Interaction,caster,scrolls,victim=None,react=False,show=False,give=False,cast=False,same=False,info=False,full=False,extra=None,msg=None):
         if react:
             MyEmbed = nextcord.Embed(title = "Reaction Spells", description = "These are the scrolls you own that can be used to save you from this attack",color = nextcord.Colour(0xFFD700))
+        elif give and full:
+            MyEmbed = nextcord.Embed(title = "Scrolls",description="Please choose which scroll you would like to gift to another player.")
+        elif full:
+            MyEmbed = nextcord.Embed(title = "Scrolls",description="You have received an extra scroll. You can only hold 5. Please choose which scroll you would like to give back to the dungeon or choose give to gift a scroll to another player.")
         else:
             MyEmbed = nextcord.Embed(title = "Scrolls",description="These are the scrolls to choose from.")
         i=0
@@ -762,6 +1059,8 @@ class Rogues(commands.Cog):
                 victim.handDis = victim.handDis + f"{i+1}. **{scrolls[i].scrollName}**\n"
             i+=1
         MyEmbed.add_field(name="Owned Scrolls",value=victim.handDis,inline=False)
+        if extra!=None:
+            MyEmbed.add_field(name="Extra Scroll",value=extra.scrollName,inline=False)
         MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
         if react:
             await interaction.send(f"Your target: {victim.name} is reacting to your spell.")
@@ -773,6 +1072,14 @@ class Rogues(commands.Cog):
         elif info:
             view = self.Reacts(oginter=interaction,scrolls=scrolls,caster=caster,info=info)
             await interaction.response.send_message(embed=MyEmbed,view=view,ephemeral=True)
+        elif give and full:
+            print("both pass")
+            view = self.Reacts(oginter=interaction,scrolls=scrolls,caster=caster,victim=victim,react=react,show=show,give=give,cast=cast,full=full,extra=extra,msg=msg)
+            await msg.edit(content=msg.content,embed=MyEmbed,view=view)
+        elif full:
+            print("full pass")
+            view = self.Reacts(oginter=interaction,scrolls=scrolls,caster=caster,victim=victim,react=react,show=show,give=give,cast=cast,full=full,extra=extra,msg=msg)
+            await msg.edit(content=msg.content,embed=MyEmbed,view=view)
         else:
             view = self.Reacts(oginter=interaction,scrolls=scrolls,victim=victim,caster=caster,react=react,show=show,give=give,cast=cast)
             await interaction.response.send_message(embed=MyEmbed,view=view,ephemeral=True)
@@ -784,78 +1091,51 @@ class Rogues(commands.Cog):
         MyEmbed.add_field(name="Blockable?",value=scroll.block,inline=True)
         MyEmbed.add_field(name="Avoidable?",value=scroll.avoid,inline=True)
         MyEmbed.add_field(name="Effect:",value=scroll.effect,inline=False)
-        MyEmbed.add_field(name="",value=f"*{scroll.flavor}*")
+        MyEmbed.add_field(name="",value=f"*{scroll.flavor}*",inline=True)
+        MyEmbed.add_field(name="Serial",value=f"#{scroll.copy}",inline=True)
         await interaction.send(embed=MyEmbed,ephemeral=True)
-    
-class Player:
-    name="player"
-    uid=0
-    hp = 5
-    hpDis = ""
-    shield = 0
-    shieldDis = "None"
-    pRoom = None
-    nRoom = None
-    hand = [] # Players can hold a max of 5 scrolls
-    handDis = ""
-    Rogue = False
-    turnDone = False
-    mem = nextcord.Member # incase I need anything specific from discords member class
-    reacting = False
-    soul = ""
-    dodge = False
-    dCount = 0
-    nRoom = []
-    pRoom = None
-    cRoom = "Safe Room"
-    movement = True
-    def __init__(self,player:nextcord.Member,uid):
-        if player.nick!=None:self.name = player.nick
-        else: self.name = player.name
-        self.mem = player
-        self.uid = uid
-        self.hand = []
-        self.hp = 5
-        self.shield = 0
-        self.pRoom = None
-        self.nRoom = None
-        self.turnDone = False
-        self.handDis = ""
-        self.hpDis = ""
-        self.shieldDis="None"
-        self.reacting = False
-        self.soul = ""
-        self.nRoom = []
-        self.pRoom = None
-        self.cRoom = "Safe Room"
-        self.movement = True
-    def addScroll(self, scroll):
-        if len(self.hand)<5:
-            self.hand.append(scroll)
-            print(f"{scroll.scrollName} added to {self.name}'s hand")
-        elif len(self.hand)==5:
-            # Need to make a function for prompting the player if they're full to choose to swap and discard a scroll or give to another player
-            print("Hand full...add code later")
-        else:
-            print(f"Something went wrong when dealing scrolls to {self.name}")
-    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None,same=False):
-        print("use scroll?")
-        if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
-            await spell.action(interaction,target,target2)
-            return
-        elif spell.aim and target!=None:
-            if same:
-                await spell.action(interaction,target,same=same)
-                return
-            await spell.action(interaction,target)
-            return
-        else:
-            if target!=None:
-                await spell.action(interaction,target)
+    async def newFloor(self):
+        await safeRoom.send("Advancing to the next Floor...")
+        for i in players:
+            print(f"Resetting {i.name} for the next floor")
+            i.movement = True
+            i.cRoom = safe
+            i.pRoom = None
+            i.delve = False
+            i.shield = 0
+            safeRoom.overwrites = {i.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+        for i in category.text_channels:
+            if i.name =="saferoom":
+                continue
             else:
-                await spell.action(interaction)
-            return
-
+                i.delete()
+        RC = 0
+        if floornum > 3:
+            difficulty +=1
+        match difficulty:
+            case 0:
+                match floornum:
+                    case 1:
+                        #bp for first floor
+                        print(floornum)
+                    case 2:
+                        #bp for second floor
+                        print(floornum)
+                    case 3:
+                        #bp for last floor before evil
+                        print(floornum)
+                    case _:
+                        print("something went wrong")
+            case 1:
+                #create first evil floor
+                print(difficulty)
+            case 2:
+                #create second evil floor
+                print(difficulty)
+            case 3:
+                #create last evil floor.
+                print(difficulty)
+        floornum+=1
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     scrollName = ""
     scrollType = "" # Off Def Anc
@@ -901,8 +1181,12 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     used = True
                 else:
                     print(self.scrollName)
-                    pass # implement later
-                    return
+                    if caster.pRoom!=None:
+                        used = True
+                        Rogues.moving(Rogues,caster.cRoom,caster.pRoom,caster)
+                    else:
+                        await interaction.send("You have not been to a room before this one. You can not use Teleport at this time. Please explore more.")
+                        return
             case "fireball": # attacking a player so gotta check for a lot
                 print(f"{interaction.user} casted {self.scrollName}")
                 used = await Rogues.reactCheck(Rogues,interaction,victim,caster,self)
@@ -1068,27 +1352,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         if caster.dCount>0: caster.dCount-=1
 class Enemy:
     hp = 3
-class Room:
-    id = None
-    name = None
-    next = []
-    prev = []
-    exit = False
-    guests = []
-    roomType = "" # monster loot trap exit
-    def __init__(self,name,id,exit,roomType):
-        self.id = id
-        self.name = name
-        self.exit = exit
-        self.roomType = roomType
-    def guestList(self):
-        return self.guests
-    def getNext(self):
-        return self.next
-    def setNext(self,rooms):
-        self.next=rooms
-    def setPrev(self,rooms):
-        self.prev=rooms
+
     
 # list of rooms I can randomize and then in second half I add the exit room to the list
 
