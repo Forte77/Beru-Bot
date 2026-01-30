@@ -58,6 +58,7 @@ class Player:
     nRoom = None
     movement = True
     delve = False
+    map = []
     def __init__(self,player:nextcord.Member,uid):
         if player.nick!=None:self.name = player.nick
         else: self.name = player.name
@@ -75,6 +76,7 @@ class Player:
         self.pRoom = None
         self.movement = True
         self.delve = False
+        self.map = []
     def setRooms(self):
         self.cRoom = safe
         print("safe")
@@ -173,7 +175,8 @@ class Rogues(commands.Cog):
             safe = Room(name="Safe Room",id=0,exit=False,roomType="Safe")
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
-            #await safeRoom.send("Please have all party members join the SafeVC")
+            for i in players:
+                i.cRoom = safe
             await safeRoom.send("This looks like a safe spot.")
             await msg.edit(content=f"You may now assemble in the {safeRoom.mention} OR VC")
         except Exception as e:
@@ -242,6 +245,17 @@ class Rogues(commands.Cog):
             for i in players:
                 if name == i.name:
                     return i
+    async def talk(self,speech:str,room:Room=None,msg:nextcord.message=None,done=False): #command I'm going to use for exposition from the bot
+        MyEmbed = nextcord.Embed(title ="Beru the Guide",description = "The Guide has something to say.",color = nextcord.Colour(0xFFD700))
+        MyEmbed.set_thumbnail(self.bot.user.avatar)
+        MyEmbed.add_field(name="Beru says:", value=speech,inline=True)
+        if done:
+            return MyEmbed
+        else:
+            if msg != None:
+                await msg.edit(embed=MyEmbed)
+            else:
+                await room.channel.send(embed=MyEmbed)
     def Deck(self): #create the "deck" of scrolls for the dungeon
         print("Creating Deck") # counter block avoid
         self.createScroll("Wish","Ancillary",False,False,False,1,"","","https://github.com/Forte77/Beru-Bot/blob/initialBeru/wish.png?raw=true") # TBD
@@ -328,11 +342,19 @@ class Rogues(commands.Cog):
         for i in floor:
             if i.name == name:
                 return i
-    def overwrite(self,room:nextcord.TextChannel,caster:Player,block:bool=False):
+    def overwrite(self,room:nextcord.TextChannel,caster:Player,block:bool=False,vc:nextcord.VoiceChannel=None):
         if block:
             room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+            print(f"Permissions for {room.name} updated for {caster.name} to Block.")
+            if vc!=None:
+                vc.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+                print(f"Permissions for {room.name} updated for {caster.name} to Block.")
         else:
             room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+            print(f"Permissions for {room.name} updated for {caster.name} to Allow.")
+            if vc!=None:
+                vc.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+                print(f"Permissions for {room.name} updated for {caster.name} to Allow.")
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
@@ -539,6 +561,7 @@ class Rogues(commands.Cog):
             MyEmbed.add_field(name="Invis?",value=f"{current.dCount} turn(s)",inline=True)
         if current.soul != "":
             MyEmbed.add_field(name="Soulmate?", value=current.soul,inline=True)
+        MyEmbed.add_field(name="Current room",value={current.cRoom.name})
         MyEmbed.add_field(name="Owned Scrolls",value=current.handDis,inline=False)
         await interaction.send(embed=MyEmbed,ephemeral=True)
     @player.subcommand(description="Duel another player")
@@ -598,6 +621,11 @@ class Rogues(commands.Cog):
             caster.cRoom.event(caster)
         else:
             await interaction.response.send_message("You are not in a Loot room.")
+    #idea for a map command the player can use
+    @player.subcommand(name="map",description="This is your personal map. It will update as you explore.")
+    async def map(self,interaction:nextcord.Interaction):
+        caster = self.identify(caster)
+
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
@@ -605,11 +633,20 @@ class Rogues(commands.Cog):
     def moving(self,fro:Room,to:Room,who:Player):
         fro.guests.pop(who)
         to.guests.append(who)
+        who.map.append(to)
         who.cRoom = to
         who.pRoom = fro
         who.nRoom = to.next
-        self.overwrite(to.channel,who)
-        self.overwrite(fro.channel,who,True)
+        if fro == safe:
+            self.overwrite(fro.channel,who,True,safeVC)
+            self.overwrite(to.channel,who)
+        elif to == safe:
+            self.overwrite(fro.channel,who,True)
+            self.overwrite(to.channel,who,False,safeVC)
+        else:
+            self.overwrite(to.channel,who)
+            self.overwrite(fro.channel,who,True)
+        
     async def damage(self,victim,avoided=False):
         if victim.shield>0:
             if avoided: 
@@ -1134,7 +1171,9 @@ class Rogues(commands.Cog):
             i.pRoom = None
             i.delve = False
             i.shield = 0
+            i.map = []
             safeRoom.overwrites = {i.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+            i.map.append(safe)
         for i in category.text_channels:
             if i.name =="saferoom":
                 continue
