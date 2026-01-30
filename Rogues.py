@@ -37,46 +37,6 @@ floornum = 1
 # Need a function to check if there is a game running already
 async def ongoing(interaction:nextcord.Interaction):
     return ready == False
-class Room:
-    id = None
-    name = None
-    channel = nextcord.TextChannel
-    next = []
-    prev = []
-    exit = False
-    guests = []
-    roomType = "" # monster loot trap exit
-    cleared = False
-    def __init__(self,name,id,exit,roomType):
-        self.id = id
-        self.name = name
-        self.exit = exit
-        self.roomType = roomType
-        self.cleared = False
-    def guestList(self):
-        return self.guests
-    def getNext(self):
-        return self.next
-    def setNext(self,rooms):
-        self.next=rooms
-    def setPrev(self,rooms):
-        self.prev=rooms
-    def event(self):
-        match (self.roomType):
-            case "Safe":
-                # Event for Safe room will only be triggered as a result from delve moving to a new floor
-            case "Loot":
-                # Event for rooms with a chest in them
-            case "Monster":
-                # Event for rooms with an enemy in them
-            case "Exit":
-                # Event for the Exit Rooms
-            case "Magic":
-                # Event for the Exit Rooms in the beginning
-            case "Evil":
-                # Event for THE room. Implement later
-            case _:
-                print("Something went wrong running the events for a room.")
 class Player:
     name="player"
     uid=0
@@ -149,6 +109,51 @@ class Player:
             else:
                 await spell.action(interaction)
             return
+class Room:
+    id = None
+    name = None
+    channel = nextcord.TextChannel
+    next = []
+    prev = []
+    exit = False
+    guests = []
+    roomType = "" # monster loot trap exit
+    cleared = False
+    def __init__(self,name,id,exit,roomType):
+        self.id = id
+        self.name = name
+        self.exit = exit
+        self.roomType = roomType
+        self.cleared = False
+    def guestList(self):
+        return self.guests
+    def getNext(self):
+        return self.next
+    def setNext(self,rooms):
+        self.next=rooms
+    def setPrev(self,rooms):
+        self.prev=rooms
+    async def event(self,user:Player=None):
+        match (self.roomType):
+            case "Safe":
+                print(f"{self.roomType} event")# Event for Safe room will only be triggered as a result from delve moving to a new floor
+            case "Loot":
+                print(f"{self.roomType} event")# Event for rooms with a chest in them
+                await self.channel.send(f"{user.name} has chosen to open the treasure chest. Everyone in the room will now be rewarded.")
+                for i in self.guests:
+                    Rogues.deal(Rogues,i,True)
+                    await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon.")
+            case "Monster":
+                print(f"{self.roomType} event")# Event for rooms with an enemy in them
+            case "Exit":
+                print(f"{self.roomType} event")# Event for the Exit Rooms
+            case "Magic":
+                print(f"{self.roomType} event")# Event for the Exit Rooms in the beginning
+            case "Evil":
+                print(f"{self.roomType} event")# Event for THE room. Implement later
+            case _:
+                print("Something went wrong running the events for a room.")
+                await self.channel.send("This is not a special room? something went wrong.")
 class Rogues(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
@@ -274,12 +279,17 @@ class Rogues(commands.Cog):
             i+=1
     def serialize(self,scroll,sn):
         scroll.serial = sn
-    async def deal(self, player):
-        print(f"Dealing to {player.name}:")
-        for i in range(0,3): # Deal 3 scrolls at the start of the game
-            dealt = random.choice(deck) # randomly pick a scroll
-            deck.remove(dealt) # remove the scroll from the deck
-            await player.addScroll(dealt) # add the scroll to the player's hand
+    async def deal(self, player,loot=False):
+        if loot:
+            dealt = random.choice(deck)
+            deck.remove(dealt)
+            await player.addScroll(dealt)
+        else:
+            print(f"Dealing to {player.name}:")
+            for i in range(0,3): # Deal 3 scrolls at the start of the game
+                dealt = random.choice(deck) # randomly pick a scroll
+                deck.remove(dealt) # remove the scroll from the deck
+                await player.addScroll(dealt) # add the scroll to the player's hand
     async def createRoom(self,exit=False):
         RC+=1
         if exit:
@@ -581,6 +591,13 @@ class Rogues(commands.Cog):
                 #implement group drag here.
         if vote >= len(players)/2:
             await self.newFloor()
+    @player.subcommand(name="loot",description="This command can only be used in Loot type rooms.")
+    async def loot(self,interaction:nextcord.Interaction):
+        caster = self.identify(interaction.user)
+        if(caster.cRoom.roomType == "Loot"):
+            caster.cRoom.event(caster)
+        else:
+            await interaction.response.send_message("You are not in a Loot room.")
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):

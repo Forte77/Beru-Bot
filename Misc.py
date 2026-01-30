@@ -27,10 +27,9 @@ class Misc(commands.Cog):
         i = 0
         done = False
         await ctx.channel.send("What do you need help chooseing between?\nType your first option:") # Prompt the user to enter options
-        options = [None]
+        options = []
         while (done == False):
             done = await self.choose(ctx,done,options,i)
-            print("done check ",done)
             i +=1 # Update i
             print (i)
             if done:
@@ -38,6 +37,7 @@ class Misc(commands.Cog):
         await ctx.channel.purge(limit = i*2)
         opt = random.randint(1,i) # Randomize choices
         pick = options[opt-1] # Get the choice that was at that random selection.
+        print(options)
         try:
             await ctx.channel.send(f"You should do:\n" + pick)
         except TypeError:
