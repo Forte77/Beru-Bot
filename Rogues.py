@@ -59,6 +59,7 @@ class Player:
     movement = True
     delve = False
     map = []
+    greed = 0
     def __init__(self,player:nextcord.Member,uid):
         if player.nick!=None:self.name = player.nick
         else: self.name = player.name
@@ -77,6 +78,7 @@ class Player:
         self.movement = True
         self.delve = False
         self.map = []
+        self.greed = 0
     def setRooms(self):
         self.cRoom = safe
         print("safe")
@@ -139,20 +141,40 @@ class Room:
         match (self.roomType):
             case "Safe":
                 print(f"{self.roomType} event")# Event for Safe room will only be triggered as a result from delve moving to a new floor
+                match difficulty:
+                    case 0:
+                        msg = "I've created a safe spot in the dungeon for this floor. Please discuss with your party members and head out to find the exit to the next floor."
+                    case 1:
+                        msg = "We should regroup here. Something about that chest felt cursed."
+                    case 2:
+                        msg = f"My suspicions have been confirmed. That chest a while ago was indeed cursed. {bads} of your party members have been cursed to let out their inner greed. I fear they are planning to eliminate the rest of you. As we reach saferooms like this one I will allow the party to discuss for a few minutes and hold a vote. I will trap whoever is voted into a *Magic Jail* where they will remain until we make it out of this dungeon. They will not die but they will not be a participant in this expedition any longer."
+                    case 3:
+                        msg = "I have created another safe room. Please decide whether someone should be *Magic Jailed*"
+                await Rogues.talk(Rogues,msg,self)
             case "Loot":
                 print(f"{self.roomType} event")# Event for rooms with a chest in them
                 await self.channel.send(f"{user.name} has chosen to open the treasure chest. Everyone in the room will now be rewarded.")
                 for i in self.guests:
-                    Rogues.deal(Rogues,i,True)
-                    await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon.")
+                    await Rogues.deal(Rogues,i,True)
+                    i.greed +=1
+                    await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon and grabbed some treasure for themselves.")
             case "Monster":
                 print(f"{self.roomType} event")# Event for rooms with an enemy in them
+                await self.channel.send("There is a monster in this room")
+                # Plan to make a whole battle view with buttons that will essentially mirror casting/reacting this will also manage the enemy turn.
             case "Exit":
                 print(f"{self.roomType} event")# Event for the Exit Rooms
+                #idea: Once the exit room is found the other rooms in the dungeon that are dead ends now lead to the exit room.
+                await self.channel.send("You have found the exit room!!\n*You can feel the dungeon shifting*\nYou can explore other areas of the dungeon to try to inform your party of where the exit is or you can wait for them to catch up.")
+                for i in floor:
+                    if i.nRoom == None:
+                        i.nRoom = self
             case "Magic":
                 print(f"{self.roomType} event")# Event for the Exit Rooms in the beginning
-            case "Evil":
+                await self.channel.send("You have reached the end of the floor. Please wait for the other")
+            case "Evil": #I was originally thinking of having opening the chest be optional but I think I'll keep track of who has gotten the most "loot" and they will be the greediest player and I will frame it as them opening the chest.
                 print(f"{self.roomType} event")# Event for THE room. Implement later
+                await self.channel.send("The party arrives at an empty room with nothing but a singular chest inside. ")
             case _:
                 print("Something went wrong running the events for a room.")
                 await self.channel.send("This is not a special room? something went wrong.")
@@ -161,31 +183,33 @@ class Rogues(commands.Cog):
         self.bot = bot
     async def make(self,interaction:nextcord.Interaction):
         await interaction.send("Setting up Game...")
-        print("here")
         try:
             msg = await interaction.original_message()
-            print("?")
             global category
             category = await guild.create_category("Rogues Category")
             await msg.edit(content="Creating the category and channels. Please remember to have a moderator use the ?teardown command when the game is done.")
+            msg.content="Creating the category and channels. Please remember to have a moderator use the ?teardown command when the game is done."
             print(f"Category {category.name} created successfully!")
             global safeRoom
             safeRoom = await guild.create_text_channel(name="safe-room",category=category,position=0,topic="Room for the party to discuss and make decisions",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)})
             global safe
-            safe = Room(name="Safe Room",id=0,exit=False,roomType="Safe")
+            safe = Room(name="The Saferoom",id=0,exit=False,roomType="Safe")
+            safe.channel = safeRoom
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
             for i in players:
                 i.cRoom = safe
-            await safeRoom.send("This looks like a safe spot.")
-            await msg.edit(content=f"You may now assemble in the {safeRoom.mention} OR VC")
+            story = "Welcome party members! I am Beru and I will be guiding you through this magical dungeon. I understand many of you did not want to leave your equipment outside but thank you for following my instructions. Many do not believe me when I saw this but this dungeon IS alive. As such thank you all for leaving your equipment with my clone. __This dungeon is special. Your brand of traditional magic and conventional weaponry will not work in this dungeon. **You can ONLY use the scrolls the dungeon provides.**__ The dungeon may offer rewards but it also is wrought with monsters and traps. Do your best to survive as you all explore the dungeon. Rest assured I am more than enough to protect your belongings while we are gone. As we go through the dungeon I will split myself into smaller clones to travel with each of you individually. If one of you perishes in the dungeon the clone will return to me and I will notify everyone that someone in the party has died.\nI wish you all luck as you explore the dungeon."
+            print("1")
+            await Rogues.talk(self,story,safe)
+            print("2")
+            await msg.edit(content=f"{msg.content}\nYou may now assemble in the {safeRoom.mention} OR VC")
+            print("3")
         except Exception as e:
-            print(f"159 An error occured: {e}")
+            print(f"194 An error occured: {e}")
     async def addPlayer(self,player:nextcord.Member,uid):
-        print("right")
         match uid:
             case 1:
-                print("here")
                 await player.add_roles(playerRole)
                 player1 = Player(player,uid)
                 players.append(player1)
@@ -193,22 +217,18 @@ class Rogues(commands.Cog):
                 await player.add_roles(playerRole)
                 player2 = Player(player,uid)
                 players.append(player2)
-                print("here2")
             case 3:
                 await player.add_roles(playerRole)
                 player3 = Player(player,uid)
                 players.append(player3)
-                print("here3")
             case 4:
                 await player.add_roles(playerRole)
                 player4 = Player(player,uid)
                 players.append(player4)
-                print("here4")
             case 5:
                 await player.add_roles(playerRole)
                 player5 = Player(player,uid)
                 players.append(player5)
-                print("here5")
             case 6:
                 await player.add_roles(playerRole)
                 player6 = Player(player,uid)
@@ -247,8 +267,8 @@ class Rogues(commands.Cog):
                     return i
     async def talk(self,speech:str,room:Room=None,msg:nextcord.message=None,done=False): #command I'm going to use for exposition from the bot
         MyEmbed = nextcord.Embed(title ="Beru the Guide",description = "The Guide has something to say.",color = nextcord.Colour(0xFFD700))
-        MyEmbed.set_thumbnail(self.bot.user.avatar)
-        MyEmbed.add_field(name="Beru says:", value=speech,inline=True)
+        MyEmbed.set_thumbnail(url=self.bot.user.avatar.url)
+        MyEmbed.add_field(name="Beru says:", value=speech,inline=False)
         if done:
             return MyEmbed
         else:
@@ -430,27 +450,21 @@ class Rogues(commands.Cog):
         if member8 != None: people.add(member8)
         if len(people) < 4:
             await interaction.response.send_message("Not enough players to start the game. Please find more friends.")
-        print("made")
         global guild
         guild = interaction.guild
         global playerRole
         playerRole = await guild.create_role(name="player")
         global everyone
         everyone = guild.default_role
-        print("it")
         j=1
-        print("to")
         for i in people:
             print(i)
             await self.addPlayer(i,j)
             j+=1
         # Need to get the bot to create the channels.
-        print("right?")
         self.Deck()
-        print("over")
         # Need to add Map related stuff
         await self.make(interaction)
-        print(".")
         await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
         global difficulty
         difficulty = 0
@@ -520,50 +534,49 @@ class Rogues(commands.Cog):
         caster.turnDone = True
         if caster.dCount>0: caster.dCount-=1
     @player.subcommand(description="Display your stats")
-    #@nextcord.slash_command(name="stats",description="your stats")
     async def stats(self,interaction:nextcord.Interaction):
-        current = self.identify(interaction.user)
-        current.hpDis = ""
-        current.shieldDis = "None"
-        current.handDis = ""
+        caster = self.identify(interaction.user)
+        caster.hpDis = ""
+        caster.shieldDis = "None"
+        caster.handDis = ""
         i=0
-        while i < current.hp:
-            current.hpDis = current.hpDis + ":heart:"
+        while i < caster.hp:
+            caster.hpDis = caster.hpDis + ":heart:"
             i+=1
         i=0
-        if current.shield ==0: current.shieldDis = "None" 
-        else: current.shieldDis = ""
-        while i < current.shield:
-            current.shieldDis = current.shieldDis + ":shield:"
+        if caster.shield ==0: caster.shieldDis = "None" 
+        else: caster.shieldDis = ""
+        while i < caster.shield:
+            caster.shieldDis = caster.shieldDis + ":shield:"
             i+=1
-        current.handDis = ""
-        if len(current.hand)==0: 
-            current.handDis = "You have no scrolls. I'm surprised that you're even still alive."
+        caster.handDis = ""
+        if len(caster.hand)==0: 
+            caster.handDis = "You have no scrolls. I'm surprised that you're even still alive."
         i=0
-        while i < len(current.hand):
-            if len(current.hand)==1:
-                current.handDis = f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
-            elif i == len(current.hand):
+        while i < len(caster.hand):
+            if len(caster.hand)==1:
+                caster.handDis = f"{i+1}. **{caster.hand[i].scrollName}** a(n) __{caster.hand[i].scrollType}__ type of spell\n"
+            elif i == len(caster.hand):
                 break
-            elif i == len(current.hand)-1:
-                current.handDis = current.handDis + f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n-# You can use the view command to inspect your scrolls"
+            elif i == len(caster.hand)-1:
+                caster.handDis = caster.handDis + f"{i+1}. **{caster.hand[i].scrollName}** a(n) __{caster.hand[i].scrollType}__ type of spell\n-# You can use the view command to inspect your scrolls"
             else:
-                current.handDis = current.handDis + f"{i+1}. **{current.hand[i].scrollName}** a(n) __{current.hand[i].scrollType}__ type of spell\n"
+                caster.handDis = caster.handDis + f"{i+1}. **{caster.hand[i].scrollName}** a(n) __{caster.hand[i].scrollType}__ type of spell\n"
             i+=1
-        MyEmbed = nextcord.Embed(title = current.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
-        MyEmbed.set_thumbnail(url=current.mem.display_avatar.url)
-        MyEmbed.add_field(name="HP:heart:", value=current.hpDis,inline=True)
-        MyEmbed.add_field(name="Shields:shield:", value=current.shieldDis,inline=True)
-        MyEmbed.add_field(name="PlayerID",value=current.uid,inline=True)
-        if current.Rogue:
+        MyEmbed = nextcord.Embed(title = caster.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
+        MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
+        MyEmbed.add_field(name="HP:heart:", value=caster.hpDis,inline=True)
+        MyEmbed.add_field(name="Shields:shield:", value=caster.shieldDis,inline=True)
+        MyEmbed.add_field(name="PlayerID",value=caster.uid,inline=True)
+        if caster.Rogue:
             MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
-        if current.dCount>0:
-            MyEmbed.add_field(name="Invis?",value=f"{current.dCount} turn(s)",inline=True)
-        if current.soul != "":
-            MyEmbed.add_field(name="Soulmate?", value=current.soul,inline=True)
-        MyEmbed.add_field(name="Current room",value={current.cRoom.name})
-        MyEmbed.add_field(name="Owned Scrolls",value=current.handDis,inline=False)
-        await interaction.send(embed=MyEmbed,ephemeral=True)
+        if caster.dCount>0:
+            MyEmbed.add_field(name="Invis?",value=f"{caster.dCount} turn(s)",inline=True)
+        if caster.soul != "":
+            MyEmbed.add_field(name="Soulmate?", value=caster.soul,inline=True)
+        MyEmbed.add_field(name="Current room",value=caster.cRoom.name,inline=True)
+        MyEmbed.add_field(name="Owned Scrolls",value=caster.handDis,inline=False)
+        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
     @player.subcommand(description="Duel another player")
     async def duel(self,interaction:nextcord.Interaction,target:nextcord.Member):
         caster = self.identify(interaction.user)
@@ -590,11 +603,10 @@ class Rogues(commands.Cog):
                 await interaction.response.send_message("Might want to collect the loot before leaving.")
                 return
         try:
-            caster.mem.disconnect()
+            await caster.mem.disconnect()
         except Exception as e:
             print("User not in a VC")
         if caster.nRoom!=None:
-            caster.movement = False
             MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
             MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
             moving = Rogues.mView(interaction,caster)
@@ -623,9 +635,22 @@ class Rogues(commands.Cog):
             await interaction.response.send_message("You are not in a Loot room.")
     #idea for a map command the player can use
     @player.subcommand(name="map",description="This is your personal map. It will update as you explore.")
-    async def map(self,interaction:nextcord.Interaction):
+    async def path(self,interaction:nextcord.Interaction):
         caster = self.identify(caster)
-
+        MyEmbed = nextcord.Embed(title = caster.name, description = "This is your path.",color = nextcord.Colour(0xFFD700))
+        MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
+        path = "The Saferoom"
+        if caster.map == []:
+            await interaction.response.send_message("You have not explored the dungeon yet...get off your ass.")
+            return
+        else:
+            for i in caster.map:
+                if i == safe:
+                    path = f"{path}-->The Saferoom"
+                else:
+                    path = f"{path}-->{i.name} a(n) {i.roomType} room"
+        MyEmbed.add_field(title=f"Floor {floornum} pathing:",value=path)
+        await interaction.response.send_message(embed=MyEmbed)
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
@@ -646,6 +671,7 @@ class Rogues(commands.Cog):
         else:
             self.overwrite(to.channel,who)
             self.overwrite(fro.channel,who,True)
+        who.movement = False
         
     async def damage(self,victim,avoided=False):
         if victim.shield>0:
