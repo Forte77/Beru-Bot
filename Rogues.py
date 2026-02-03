@@ -210,51 +210,57 @@ class Rogues(commands.Cog):
                 i.nRoom = safe.next
                 safe.guests.append(i)
             story = "Welcome party members! I am Beru and I will be guiding you through this magical dungeon. I understand many of you did not want to leave your equipment outside but thank you for following my instructions. Many do not believe me when I saw this but this dungeon IS alive. As such thank you all for leaving your equipment with my clone. __This dungeon is special. Your brand of traditional magic and conventional weaponry will not work in this dungeon. **You can ONLY use the scrolls the dungeon provides.**__ The dungeon may offer rewards but it also is wrought with monsters and traps. Do your best to survive as you all explore the dungeon. Rest assured I am more than enough to protect your belongings while we are gone. As we go through the dungeon I will split myself into smaller clones to travel with each of you individually. If one of you perishes in the dungeon the clone will return to me and I will notify everyone that someone in the party has died.\nI wish you all luck as you explore the dungeon."
-            print("1")
             await Rogues.talk(self,story,safe)
-            print("2")
             await msg.edit(content=f"{msg.content}\nYou may now assemble in the {safeRoom.mention} OR VC")
-            print("3")
         except Exception as e:
-            print(f"194 An error occured: {e}")
+            print(f"216 Before Make finished. An error occured: {e}")
     async def addPlayer(self,player:nextcord.Member,uid):
         match uid:
             case 1:
                 await player.add_roles(playerRole)
                 player1 = Player(player,uid)
                 players.append(player1)
+                print(f"player {uid} {player1.name}")
             case 2:
                 await player.add_roles(playerRole)
                 player2 = Player(player,uid)
                 players.append(player2)
+                print(f"player {uid} {player1.name}")
             case 3:
                 await player.add_roles(playerRole)
                 player3 = Player(player,uid)
                 players.append(player3)
+                print(f"player {uid} {player1.name}")
             case 4:
                 await player.add_roles(playerRole)
                 player4 = Player(player,uid)
                 players.append(player4)
+                print(f"player {uid} {player1.name}")
             case 5:
                 await player.add_roles(playerRole)
                 player5 = Player(player,uid)
                 players.append(player5)
+                print(f"player {uid} {player1.name}")
             case 6:
                 await player.add_roles(playerRole)
                 player6 = Player(player,uid)
                 players.append(player6)
+                print(f"player {uid} {player1.name}")
             case 7:
                 await player.add_roles(playerRole)
                 player7 = Player(player,uid)
                 players.append(player7)
+                print(f"player {uid} {player1.name}")
             case 8:
                 await player.add_roles(playerRole)
                 player8 = Player(player,uid)
                 players.append(player8)
+                print(f"player {uid} {player1.name}")
             case 9:
                 await player.add_roles(playerRole)
                 player9 = Player(player,uid)
                 players.append(player9)
+                print(f"player {uid} {player1.name}")
             case _:
                 print("Not a discord member or Too many players")
         match len(players)/2:#how many rogues there will be
@@ -498,9 +504,13 @@ class Rogues(commands.Cog):
         await category.delete()
         print("g")
         global deck
+        for j in deck:
+            del j
         del deck
         print("o")
         global players
+        for k in players:
+            del k
         del players
         print("GAME OVER")
     @teardown.error
@@ -690,6 +700,11 @@ class Rogues(commands.Cog):
             await Rogues.overwrite(Rogues,fro.channel,who,True)
         if tele == False:
             who.movement = False
+        if to.roomType == "Loot" or to.roomType == "Magic" or to.roomType == "Exit":
+            await to.channel.send(f"*{who.name} entered this {to.roomType} room!*")
+        else:
+            await to.channel.send(f"*{who.name} entered this {to.roomType} room!*")
+            await to.event(who)
     async def damage(self,victim,avoided=False,attacker=None):
         if victim.shield>0:
             if avoided: 
@@ -718,7 +733,7 @@ class Rogues(commands.Cog):
                 await Rogues.death(Rogues,victim,attacker,victim.reborn)
     async def death(self,victim,killer=None,wish=False,soul=None):
         await safeRoom.send(f"{victim.name} has perished.")
-        await victim.cRoom.send(f"{victim.name} has perished.")
+        await victim.cRoom.channel.send(f"{victim.name} has perished.")
         if killer != None: # if there is a killer
             if killer == soul: # if the killer is stupid
                 await killer.mem.send("That was one of the decisions of all time...You murdered your own soul mate...for some reason. Well now you both die. Good job")
@@ -852,9 +867,10 @@ class Rogues(commands.Cog):
                             await self.victim.use(interaction,spell)
                             await Rogues.damage(Rogues,self.victim,attacker=self.caster)
                             self.victim.reacting = False
-                    if check:
+                    if check: # same check but i don't think I need it to rerun choose scroll
                         self.view.setS(check=False)
                         inter = self.view.getI()
+                        self.victim.reacting = True
                         await Rogues.chooseScroll(self=Rogues,interaction=inter,victim=self.victim,caster=self.caster,scrolls=self.scrolls,react=True,same=False)
                 elif self.show:
                     print("show")
@@ -902,7 +918,7 @@ class Rogues(commands.Cog):
                         await self.caster.use(interaction,spell)
                 elif self.full:
                     if self.give:
-                        print("754")
+                        print("905")
                         if spell in self.caster.hand:
                             self.caster.hand.remove(spell)
                             await self.caster.addScroll(self.view.extra)
@@ -975,7 +991,7 @@ class Rogues(commands.Cog):
                     await interaction.edit_original_message(view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"799 An error occured: {e}")
+                print(f"994 React Button Callback. An error occured: {e}")
     class Reacts(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,cast=False,info=False,same=False,full=False,extra=None,msg=None):
             super().__init__(timeout=45)
@@ -1001,7 +1017,7 @@ class Rogues(commands.Cog):
                 if give==False:
                     self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,msg=self.msg,show=show,cast=cast,info=info,full=full,label="Give",style=nextcord.ButtonStyle.red,custom_id=str(80)))
             if react:
-                self.add_item(Rogues.Butt(scrolls=scrolls,react=react,give=give,show=show,cast=cast,info=info,label="Take the hit",style=nextcord.ButtonStyle.red,custom_id=str(77)))
+                self.add_item(Rogues.Butt(scrolls=scrolls,victim=victim,caster=caster,react=react,give=give,show=show,cast=cast,info=info,label="Take the hit",style=nextcord.ButtonStyle.red,custom_id=str(77)))
         def getS(self): # getter to track Same check
             print(f"same is {self.Scheck}")
             return self.Scheck
@@ -1049,7 +1065,6 @@ class Rogues(commands.Cog):
             else:
                 try:
                     await interaction.response.defer()
-                    print("40")
                     if self.scroll.aim2 and not self.view.aimCheck():
                         self.t1 = Rogues.identify(Rogues,name=self.label)
                         self.disabled = True
@@ -1060,7 +1075,6 @@ class Rogues(commands.Cog):
                         print("saving target 1?")
                         return
                     elif self.scroll.aim2 and self.view.aimCheck:
-                        print("hi2")
                         self.t1 = self.view.getT()
                         print(self.t1.name)
                         if self.label == "Same person":
@@ -1083,7 +1097,7 @@ class Rogues(commands.Cog):
                         await interaction.edit_original_message(embed=self.embed,view=self.view)
                         self.view.stop()
                 except Exception as e:
-                    print(f"902 An error occured: {e}")
+                    print(f"1100 Aim button callback. An error occured: {e}")
     class Aiming(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scroll=None,caster=None,embed=None,full=False,msg=None):
             super().__init__(timeout=60)
@@ -1139,7 +1153,6 @@ class Rogues(commands.Cog):
                         await caster.mem.send(f"The {scroll.scrollName} scroll will still be used up if your second target is able to be hit by the attack.")
                 return False
         else:
-            await caster.mem.send("You have used your scroll and ended your turn")
             hit = True # check to see if it automatically hits.
             reaction = [] # array of the options the victim has.
             if victim.hand != []:
@@ -1154,7 +1167,7 @@ class Rogues(commands.Cog):
                             continue
                         reaction.append(i)
                         if len(reaction)==1:
-                            await victim.mem.send(f"You have at least one scroll in your hand that can be used to save you from this spell. Which scroll will you use?")
+                            await victim.mem.send(f"You have at least one scroll in your hand that can be used to save you from this spell. What will you do?")
                             hit = False # pause the hit
             else:
                 await victim.mem.send("You have no scrolls to defend with. git gud")
@@ -1169,16 +1182,14 @@ class Rogues(commands.Cog):
                 victim.reacting = True
                 if same==False:
                     await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True)
-                    await safeRoom.send(f"{caster.name} casted {scroll.scrollName} at {victim.name}")
+                    await caster.cRoom.channel.send(f"{caster.name} casted {scroll.scrollName} at {victim.name}")
                 elif same:
-                    if tried:
-                        await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True,same=same)
-                    else:
-                        await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True,same=same)
-                        victim.reacting = False
-                        await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=True,counter=counter,block=block,avoid=avoid,used=used,tried=True)
-                        return True
-                caster.turnDone = True
+                    #if tried:
+                    await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True,same=same)
+                    #else:
+                    #    await self.chooseScroll(self=self,interaction=interaction,victim=victim,caster=caster,scrolls=reaction,react=True,same=same)
+                    #    victim.reacting = False
+                    #    await Rogues.reactCheck(Rogues,interaction,victim,caster,scroll,same=True,counter=counter,block=block,avoid=avoid,used=used,tried=True)
             return True
     async def chooseScroll(self,interaction:nextcord.Interaction,caster,scrolls,victim=None,react=False,show=False,give=False,cast=False,same=False,info=False,full=False,extra=None,msg=None):
         if react:
@@ -1208,7 +1219,7 @@ class Rogues(commands.Cog):
             MyEmbed.add_field(name="Extra Scroll",value=extra.scrollName,inline=False)
         MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
         if react:
-            await interaction.send(f"Your target: {victim.name} is reacting to your spell.")
+            await interaction.send(f"Your target: {victim.name} is reacting to your spell.",ephemeral=True)
             view = self.Reacts(oginter=interaction,scrolls=scrolls,victim=victim,caster=caster,react=react,same=same)
             await victim.mem.send(embed=MyEmbed,view=view)
         elif cast:
@@ -1388,13 +1399,21 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 print(f"{interaction.user} casted {self.scrollName}")
                 tried = False
                 if target2!=None:
+                    print("two people")
                     used = await Rogues.reactCheck(Rogues,interaction,victim,caster,self,counter=self.counter,block=self.block,avoid=self.avoid,used=used,tried=tried)
                     tried = True
-                    used = await Rogues.reactCheck(Rogues,interaction,v2,caster,self,counter=self.counter,block=self.block,avoid=self.avoid,used=used,tried=tried)
+                    if used:
+                        await Rogues.reactCheck(Rogues,interaction,v2,caster,self,counter=self.counter,block=self.block,avoid=self.avoid,used=used,tried=tried)
+                    else:
+                        used = await Rogues.reactCheck(Rogues,interaction,v2,caster,self,counter=self.counter,block=self.block,avoid=self.avoid,used=used,tried=tried)
                 elif target2 == None or same: # if the target is double fucked
-                    used = await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=same,counter=self.counter,block=self.block,avoid=self.avoid,used=used)
-                caster.turnDone = True
-                await caster.mem.send("You have used your scroll and ended your turn")
+                    print("double fucked")
+                    used = await Rogues.reactCheck(Rogues,interaction,victim,caster,self,same=same,counter=self.counter,block=self.block,avoid=self.avoid,used=False)
+                if used:
+                    caster.turnDone = True
+                    await caster.mem.send("You have used your scroll and ended your turn")
+                else:
+                    await caster.mem.send("The attack was unsuccessful. The scroll will remain in your hand.")
             case "dragon breath": # can't be blocked
                 print(f"{interaction.user} casted {self.scrollName}")
                 victim = Rogues.identify(Rogues,target) # identify target player
