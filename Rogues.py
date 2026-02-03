@@ -28,9 +28,9 @@ ready = True
 deck = []
 evil = False
 players = []
+deads = []
 bads = 0
 start = False
-RC = 0
 vote = 0
 floor = []
 floornum = 1
@@ -60,6 +60,7 @@ class Player:
     delve = False
     map = []
     greed = 0
+    reborn = False
     def __init__(self,player:nextcord.Member,uid):
         if player.nick!=None:self.name = player.nick
         else: self.name = player.name
@@ -79,11 +80,9 @@ class Player:
         self.delve = False
         self.map = []
         self.greed = 0
+        self.reborn = False
     def setRooms(self):
-        self.cRoom = safe
-        print("safe")
         self.nRoom = self.cRoom.next
-        print("set")
     async def addScroll(self, scroll,interaction:nextcord.Interaction=None,gifter=None):
         if len(self.hand)<5:
             self.hand.append(scroll)
@@ -130,7 +129,10 @@ class Room:
         self.roomType = roomType
         self.cleared = False
     def guestList(self):
-        return self.guests
+        guestlist = ""
+        for i in self.guests:
+            guestlist += f"{i.name}----"
+        return guestlist
     def getNext(self):
         return self.next
     def setNext(self,rooms):
@@ -197,8 +199,16 @@ class Rogues(commands.Cog):
             safe.channel = safeRoom
             global safeVC
             safeVC = await guild.create_voice_channel(name="Safe VC",category=category,overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,connect=False,read_messages=False,send_messages=False),playerRole:nextcord.PermissionOverwrite(view_channel=True,connect=True,read_messages=False,send_messages=False)})
+            roomA = await self.createRoom()
+            roomB = await self.createRoom()
+            roomC = await self.createRoom(exit=True)
+            safe.next = [roomA,roomB]
+            roomA.next = [roomC]
+            roomB.next = [roomC]
             for i in players:
                 i.cRoom = safe
+                i.nRoom = safe.next
+                safe.guests.append(i)
             story = "Welcome party members! I am Beru and I will be guiding you through this magical dungeon. I understand many of you did not want to leave your equipment outside but thank you for following my instructions. Many do not believe me when I saw this but this dungeon IS alive. As such thank you all for leaving your equipment with my clone. __This dungeon is special. Your brand of traditional magic and conventional weaponry will not work in this dungeon. **You can ONLY use the scrolls the dungeon provides.**__ The dungeon may offer rewards but it also is wrought with monsters and traps. Do your best to survive as you all explore the dungeon. Rest assured I am more than enough to protect your belongings while we are gone. As we go through the dungeon I will split myself into smaller clones to travel with each of you individually. If one of you perishes in the dungeon the clone will return to me and I will notify everyone that someone in the party has died.\nI wish you all luck as you explore the dungeon."
             print("1")
             await Rogues.talk(self,story,safe)
@@ -325,10 +335,10 @@ class Rogues(commands.Cog):
                 deck.remove(dealt) # remove the scroll from the deck
                 await player.addScroll(dealt) # add the scroll to the player's hand
     async def createRoom(self,exit=False):
-        RC+=1
+        RC = len(floor)
         if exit:
             if difficulty==0:
-                room = Room(name=f"Magic{RC}",id=RC,exit=True,roomType="Loot")
+                room = Room(name=f"Magic{RC}",id=RC,exit=True,roomType="Magic")
             else:
                 room = Room(name=f"Exit{RC}",id=RC,exit=True,roomType="Exit")
         else:
@@ -362,18 +372,18 @@ class Rogues(commands.Cog):
         for i in floor:
             if i.name == name:
                 return i
-    def overwrite(self,room:nextcord.TextChannel,caster:Player,block:bool=False,vc:nextcord.VoiceChannel=None):
+    async def overwrite(self,room:nextcord.TextChannel,caster:Player,block:bool=False,vc:nextcord.VoiceChannel=None):
         if block:
-            room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+            await room.set_permissions(caster.mem,view_channel=False,read_messages=False,send_messages=False)
             print(f"Permissions for {room.name} updated for {caster.name} to Block.")
             if vc!=None:
-                vc.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
+                await vc.set_permissions(caster.mem,view_channel=False,read_messages=False,send_messages=False)
                 print(f"Permissions for {room.name} updated for {caster.name} to Block.")
         else:
-            room.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+            await room.set_permissions(caster.mem,view_channel=True,read_messages=True,send_messages=True)
             print(f"Permissions for {room.name} updated for {caster.name} to Allow.")
             if vc!=None:
-                vc.overwrites = {caster.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
+                await vc.set_permissions(caster.mem,view_channel=True,read_messages=True,send_messages=True)
                 print(f"Permissions for {room.name} updated for {caster.name} to Allow.")
     @commands.command()
     @commands.check(is_me)
@@ -456,6 +466,8 @@ class Rogues(commands.Cog):
         playerRole = await guild.create_role(name="player")
         global everyone
         everyone = guild.default_role
+        global difficulty
+        difficulty = 0
         j=1
         for i in people:
             print(i)
@@ -466,8 +478,6 @@ class Rogues(commands.Cog):
         # Need to add Map related stuff
         await self.make(interaction)
         await safeRoom.send("The dungeon has supplied magic scrolls to help the party.")
-        global difficulty
-        difficulty = 0
         for i in players:
             await self.deal(i)
     @RogueGame.error
@@ -481,8 +491,10 @@ class Rogues(commands.Cog):
         ready = True 
         await interaction.response.send_message("Shutting down Game...")
         await playerRole.delete()
-        await safeRoom.delete()
-        await safeVC.delete()
+        #await safeRoom.delete()
+        #await safeVC.delete()
+        for i in category.channels:
+            await i.delete()
         await category.delete()
         print("g")
         global deck
@@ -589,26 +601,29 @@ class Rogues(commands.Cog):
         await self.chooseScroll(interaction,caster=caster,scrolls=caster.hand,info=True)
     @player.subcommand(name="move",description="Move to a new room.")
     async def move(self,interaction:nextcord.Interaction):
-        #change movement to false and set up system so that when all players end their turn they all reset turn(dungeon does it's turn first but so far no enemies yet.)
+        # Change movement to false and set up system so that when all players end their turn they all reset turn(dungeon does it's turn first but so far no enemies yet.)
         caster = self.identify(interaction.user)
-        if caster.movement is False:
+        if caster.movement == False:
+            print("already moved")
             await interaction.response.send_message("You have already moved in this turn you will need to end your turn before you can move on.")
             return
         if caster.cRoom.roomType == "Monster":
+            print("monster room")
             if caster.cRoom.cleared == False:
+                print("not cleared yet M")
                 await interaction.response.send_message("You must deal with the monster in the room first.")
                 return
         if caster.cRoom.roomType == "Loot":
-            if caster.cRoom.cleared == False:
-                await interaction.response.send_message("Might want to collect the loot before leaving.")
-                return
-        try:
+            print("leaving loot room")
+            await interaction.response.send_message("Might want to collect the loot before leaving.")
+        if caster.mem in safeVC.members:
             await caster.mem.disconnect()
-        except Exception as e:
-            print("User not in a VC")
+        else:
+            print(f"{caster.name} not in a VC")
         if caster.nRoom!=None:
             MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
             MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
+            print("view?")
             moving = Rogues.mView(interaction,caster)
             await interaction.response.send_message(embed=MyEmbed,view=moving)
         else:
@@ -655,25 +670,27 @@ class Rogues(commands.Cog):
     async def errorhandler(ctx:nextcord.Interaction,error):
         if isinstance(error,nextcord.errors.ApplicationCheckFailure):
             await ctx.send("There isn't a game happening right now.")
-    def moving(self,fro:Room,to:Room,who:Player):
-        fro.guests.pop(who)
+    async def moving(self,fro:Room,to:Room,who:Player,tele=False):
+        print(fro.name)
+        print(fro.guestList())
+        fro.guests.pop(fro.guests.index(who))
         to.guests.append(who)
         who.map.append(to)
         who.cRoom = to
         who.pRoom = fro
         who.nRoom = to.next
         if fro == safe:
-            self.overwrite(fro.channel,who,True,safeVC)
-            self.overwrite(to.channel,who)
+            await Rogues.overwrite(Rogues,fro.channel,who,True,safeVC)
+            await Rogues.overwrite(Rogues,to.channel,who)
         elif to == safe:
-            self.overwrite(fro.channel,who,True)
-            self.overwrite(to.channel,who,False,safeVC)
+            await Rogues.overwrite(Rogues,fro.channel,who,True)
+            await Rogues.overwrite(Rogues,to.channel,who,False,safeVC)
         else:
-            self.overwrite(to.channel,who)
-            self.overwrite(fro.channel,who,True)
-        who.movement = False
-        
-    async def damage(self,victim,avoided=False):
+            await Rogues.overwrite(Rogues,to.channel,who)
+            await Rogues.overwrite(Rogues,fro.channel,who,True)
+        if tele == False:
+            who.movement = False
+    async def damage(self,victim,avoided=False,attacker=None):
         if victim.shield>0:
             if avoided: 
                 await victim.mem.send(f"You have avoided damage.")
@@ -693,12 +710,49 @@ class Rogues(commands.Cog):
         if victim.hp == 0:
             if victim.soul != "":
                 # kill both
+                soul = Rogues.identify(Rogues,name=victim.soul)
+                await Rogues.death(Rogues,victim,attacker,victim.reborn,soul)
                 print("death for both")
             else:
                 # make a death function
-                await safeRoom.send(f"{victim.name} has perished.")
-                players.pop(victim.uid)
-                victim.mem.remove_roles(playerRole)
+                await Rogues.death(Rogues,victim,attacker,victim.reborn)
+    async def death(self,victim,killer=None,wish=False,soul=None):
+        await safeRoom.send(f"{victim.name} has perished.")
+        await victim.cRoom.send(f"{victim.name} has perished.")
+        if killer != None: # if there is a killer
+            if killer == soul: # if the killer is stupid
+                await killer.mem.send("That was one of the decisions of all time...You murdered your own soul mate...for some reason. Well now you both die. Good job")
+                deads.append(soul)
+                soul.hp = 0
+                soul.shield = 0
+                for i in victim.hand:
+                    victim.hand.remove(i)
+                    deck.append(i)
+                await Rogues.death(Rogues,soul,wish=soul.reborn)
+            else:
+                msg = await killer.mem.send(f"You have murdered {victim.name}. You have earned one of their scrolls.")
+                if killer.Rogue:
+                    # Make a view for them to choose the scroll they want from the victim's hand.
+                    print("Rogue kill")
+                else:
+                    loot = random.choice(victim.hand)
+                    await killer.addScroll(Player,loot)
+                    await msg.edit(content=f"{msg.content}\nYou have received {victim.name}'s {loot.scrollName} scroll")
+        for i in victim.hand: # empty the dead's hand
+            victim.hand.remove(i)
+            deck.append(i)
+        if soul != None: # if there's a soulmate
+            soul.mem.send("Your soulmate has perished. As a result you have died as well.\nYour scrolls have returned to the dungeon.")
+            soul.hp = 0
+            soul.shield = 0
+            await Rogues.death(Rogues,soul,wish=soul.reborn)
+        if wish: # wish check for being reborn
+            await victim.cRoom.channel.send(f"{victim.name} died and like a Phoenix from the ashes they were immediately reborn.")
+            Rogues.deal(Rogues,victim)
+            return
+        players.pop(victim.uid)
+        victim.mem.remove_roles(playerRole)
+        deads.append(victim)
     class mView(nextcord.ui.View):
         def __init__(self,oginter,caster):
             super().__init__(timeout=60)
@@ -711,24 +765,21 @@ class Rogues(commands.Cog):
         async def on_timeout(self):
             for i in self.children:
                 i.disabled = True
-                print(f"{i.label} disabled. Move View")
             await self.oginter.edit_original_message(view=self)
             self.stop()
     class mButt(nextcord.ui.Button):
         def __init__(self,caster,label="",style=nextcord.ui.Button.style,custom_id=None):
             super().__init__(label=label,style=style,custom_id=custom_id)
-            self.caster
+            self.caster = caster
+            self.label = label
+            self.style = style
+            self.custom_id = custom_id
         async def callback(self,interaction:nextcord.Interaction):
-            if self.caster.cRoom == safe:
-                safeRoom.overwrites = {self.caster.mem:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)}
-                self.caster.pRoom = safe
-            else:
-                self.caster.pRoom = self.caster.cRoom
-            room = Rogues.findRoom(self.label)
-            Rogues.moving(Rogues,self.caster.cRoom,room,self.caster)
+            room = Rogues.findRoom(Rogues,self.label)
             for i in self.view.children:
                 i.disabled =True
-            await interaction.edit_original_message(view=self.view)
+            await self.view.oginter.edit_original_message(view=self.view)
+            await Rogues.moving(Rogues,self.caster.cRoom,room,self.caster)
             self.view.stop()
     class Butt(nextcord.ui.Button):
         def __init__(self,scrolls,victim=None,caster=None,react=False,give=False,show=False,scroll=None,cast=False,info=False,full=False,msg=None,label="",style=nextcord.ui.Button.style,custom_id=None):
@@ -770,36 +821,36 @@ class Rogues(commands.Cog):
                     match str.lower(self.label):
                         case "invisibility":
                             await self.victim.use(interaction,spell)
-                            await Rogues.damage(Rogues,self.victim,True)
+                            await Rogues.damage(Rogues,self.victim,True,attacker=self.caster)
                             if check==False:
                                 self.victim.reacting = False                        
                             else:
                                 check = False
                         case "teleport":
                             await self.victim.use(interaction,spell,self.caster)
-                            await Rogues.damage(Rogues,self.victim,True)
+                            await Rogues.damage(Rogues,self.victim,True,attacker=self.caster)
                             if check==False:
                                 self.victim.reacting = False
                             else:
                                 check = False 
                         case "counter":
                             await self.victim.use(interaction,spell,self.caster)
-                            await Rogues.damage(Rogues,self.victim,True)
+                            await Rogues.damage(Rogues,self.victim,True,attacker=self.caster)
                             #self.victim.reacting = False for my implementation I think I should NOT do this yet
                         case "za warudo":
                             await self.victim.use(interaction,spell,self.caster)
-                            await Rogues.damage(Rogues,self.victim,True)
+                            await Rogues.damage(Rogues,self.victim,True,attacker=self.caster)
                             if check==False:
                                 self.victim.reacting = False
                             else:
                                 check = False
                         case "take the hit":
-                            await Rogues.damage(Rogues,self.victim)
+                            await Rogues.damage(Rogues,self.victim,attacker=self.caster)
                             self.victim.reacting = False
                         case _:
                             print("label check "+ self.label)
                             await self.victim.use(interaction,spell)
-                            await Rogues.damage(Rogues,self.victim)
+                            await Rogues.damage(Rogues,self.victim,attacker=self.caster)
                             self.victim.reacting = False
                     if check:
                         self.view.setS(check=False)
@@ -917,7 +968,7 @@ class Rogues(commands.Cog):
                         print("give was selected")
                         await Rogues.chooseScroll(Rogues,interaction,self.caster,self.scrolls,victim=self.victim,give=True,full=True,extra=self.view.extra,msg=self.msg)
                         return
-                if self.cast==False:
+                if self.cast==False and self.info==False:
                     for i in self.view.children:
                         i.disabled = True
                         print(f"{i.label} disabled. RCallback")
@@ -1111,8 +1162,8 @@ class Rogues(commands.Cog):
             if hit:
                 await victim.mem.send(f"You have no scrolls that can save you from this spell. Big rip")
                 if same:
-                    await Rogues.damage(Rogues,victim)
-                await Rogues.damage(Rogues,victim)
+                    await Rogues.damage(Rogues,victim,attacker=caster)
+                await Rogues.damage(Rogues,victim,attacker=caster)
                 caster.turnDone = True
             else:
                 victim.reacting = True
@@ -1189,22 +1240,11 @@ class Rogues(commands.Cog):
         MyEmbed.add_field(name="Serial",value=f"#{scroll.copy}",inline=True)
         await interaction.send(embed=MyEmbed,ephemeral=True)
     async def newFloor(self):
-        await safeRoom.send("Advancing to the next Floor...")
-        for i in players:
-            print(f"Resetting {i.name} for the next floor")
-            i.movement = True
-            i.cRoom = safe
-            i.pRoom = None
-            i.delve = False
-            i.shield = 0
-            i.map = []
-            safeRoom.overwrites = {i.mem:nextcord.PermissionOverwrite(view_channel=True,read_messages=True,send_messages=True)}
-            i.map.append(safe)
         for i in category.text_channels:
             if i.name =="saferoom":
                 continue
-            else:
-                i.delete()
+            else: #delete all rooms each floor or save them for post game review?
+                await i.delete()
         RC = 0
         if floornum > 3:
             difficulty +=1
@@ -1213,12 +1253,6 @@ class Rogues(commands.Cog):
                 match floornum:
                     case 1:
                         #bp for first floor
-                        roomA = self.createRoom()
-                        roomB = self.createRoom()
-                        roomC = self.createRoom(exit=True)
-                        safe.next = [roomA,roomB]
-                        roomA.next = [roomC]
-                        roomB.next = [roomC]
                         print(floornum)
                     case 2:
                         #bp for second floor
@@ -1237,6 +1271,18 @@ class Rogues(commands.Cog):
             case 3:
                 #create last evil floor.
                 print(difficulty)
+        await safeRoom.send("Advancing to the next Floor...")
+        for i in players:
+            print(f"Resetting {i.name} for the next floor")
+            i.movement = True
+            i.cRoom = safe
+            i.pRoom = None
+            i.delve = False
+            i.shield = 0
+            i.map = []
+            await Rogues.overwrite(Rogues,safeRoom,i,False,safeVC)
+            i.map.append(safe)
+            i.nRoom = safe.next
         floornum+=1
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     scrollName = ""
@@ -1265,6 +1311,8 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.aim2 = aim2
         self.effect = effect
         self.image = image
+        if name == "Wish":
+            wCount = 0
     def toPrint(self):
         print(f"{self.scrollName}. Type: {self.scrollType}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
     async def action(self,interaction:nextcord.Interaction,target=None,target2=None,same:bool=False):
@@ -1285,7 +1333,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     print(self.scrollName)
                     if caster.pRoom!=None:
                         used = True
-                        Rogues.moving(Rogues,caster.cRoom,caster.pRoom,caster)
+                        await Rogues.moving(Rogues,caster.cRoom,caster.pRoom,caster,True)
                     else:
                         await interaction.send("You have not been to a room before this one. You can not use Teleport at this time. Please explore more.")
                         return
@@ -1439,7 +1487,12 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 await caster.mem.send(f"Your soul is now linked with {victim.name}.\n**Regardless of any other factors** if you both are the only ones to make it out of the dungeon __alive__ you both will be considered the winners of this excursion.\n**However if one of you dies. You both perish.**")
                 await victim.mem.send(f"Your soul is now linked with {caster.name}.\n**Regardless of any other factors** if you both are the only ones to make it out of the dungeon __alive__ you both will be considered the winners of this excursion.\n**However if one of you dies. You both perish.**")
             case "wish":
+                # wish idea: second life. when you die you are reborn(full health, 3 random scrolls from deck) into a previous room if applicable.
+                # wish idea: wish will get added back into the deck two additional times. 3 wishes total in the game. after that no more.
+                wCount +=1
+                # Make a wish view with buttons for each wish
                 print(f"{interaction.user} casted {self.scrollName}")
+                used = True
             case "za warudo":
                 print(f"{interaction.user} casted {self.scrollName}")
             case _: #Default
@@ -1447,9 +1500,15 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         if used:
             caster.hand.remove(self)
             if str.lower(self.scrollName) == "soul knot":
-                safeRoom.send("# Soul Knot has been used and will not be returned to the dungeon.")
+                await safeRoom.send("# Soul Knot has been used and will not be returned to the dungeon.")
             else:
-                deck.append(self)
+                if self.scrollName == "Wish":
+                    if wCount==3:
+                        await safeRoom.send("# All 3 Wishes have been used and the magical wish granting...orbs will not return to the dungeon.")
+                    else:
+                        deck.append(self)
+                else:
+                    deck.append(self)
             await interaction.send(f"*Your {self.scrollName} has returned to the Dungeon*",ephemeral=True)
         if caster.dCount>0: caster.dCount-=1
 class Enemy:
@@ -1467,7 +1526,6 @@ verify all buttons disable properly when casting,reacting,etc
 '''
 # Notes:
 # idea: difficulty (int counter that goes up whenever the party advances rooms or floors[undecided]) will be used to influence enemy stats.
-# wish idea: second life. when you die you are reborn(full health, 3 random scrolls from deck) into a previous room if applicable.
 # Reminder to keep teardown up to date
 # Need to make a death function to handle soul knot and other stuff
 # When dealing with Rooms make an exit check that will happen each time a room has been entered by a player
