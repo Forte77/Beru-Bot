@@ -81,6 +81,7 @@ class Player:
         self.map = []
         self.greed = 0
         self.reborn = False
+        print("player created")
     def setRooms(self):
         self.nRoom = self.cRoom.next
     async def addScroll(self, scroll,interaction:nextcord.Interaction=None,gifter=None):
@@ -158,11 +159,14 @@ class Room:
                 await self.channel.send(f"{user.name} has chosen to open the treasure chest. Everyone in the room will now be rewarded.")
                 for i in self.guests:
                     await Rogues.deal(Rogues,i,True)
-                    i.greed +=1
+                    if len(self.guests)==1:
+                        i.greed +=1
                     await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon and grabbed some treasure for themselves.")
             case "Monster":
                 print(f"{self.roomType} event")# Event for rooms with an enemy in them
-                await self.channel.send("There is a monster in this room")
+                await self.channel.send("There is a monster in this room.\n*But I haven't implemented that yet soooooo uhhhh You're allowed to just move on.*\n*You can move again now*")
+                for i in self.guests:
+                    i.movement = True
                 # Plan to make a whole battle view with buttons that will essentially mirror casting/reacting this will also manage the enemy turn.
             case "Exit":
                 print(f"{self.roomType} event")# Event for the Exit Rooms
@@ -225,53 +229,45 @@ class Rogues(commands.Cog):
                 await player.add_roles(playerRole)
                 player2 = Player(player,uid)
                 players.append(player2)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player2.name}")
             case 3:
                 await player.add_roles(playerRole)
                 player3 = Player(player,uid)
                 players.append(player3)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player3.name}")
             case 4:
                 await player.add_roles(playerRole)
                 player4 = Player(player,uid)
                 players.append(player4)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player4.name}")
             case 5:
                 await player.add_roles(playerRole)
                 player5 = Player(player,uid)
                 players.append(player5)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player5.name}")
             case 6:
                 await player.add_roles(playerRole)
                 player6 = Player(player,uid)
                 players.append(player6)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player6.name}")
             case 7:
                 await player.add_roles(playerRole)
                 player7 = Player(player,uid)
                 players.append(player7)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player7.name}")
             case 8:
                 await player.add_roles(playerRole)
                 player8 = Player(player,uid)
                 players.append(player8)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player8.name}")
             case 9:
                 await player.add_roles(playerRole)
                 player9 = Player(player,uid)
                 players.append(player9)
-                print(f"player {uid} {player1.name}")
+                print(f"player {uid} {player9.name}")
             case _:
                 print("Not a discord member or Too many players")
-        match len(players)/2:#how many rogues there will be
-            case 2:
-                bads = 1
-            case 3:
-                bads = 2
-            case 4:
-                if len(players)>8: bads=3
-                else:
-                    bads = 2
+        return uid+1
     def identify(self,player:nextcord.Member=None,name:str=None): #function to identify discord Member to Player class counterpart
         if player!=None:
             for i in players:
@@ -350,22 +346,22 @@ class Rogues(commands.Cog):
         else:
             match (difficulty): #unsure how I want to tackle the exit situation.
                 case 0:
-                    types = ["monster","loot","trap"]
+                    types = ["Monster","Loot","Trap"]
                     weight = [0.15,0.80,0.05]
                     room = random.choices(types,weight,k=1)
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
                 case 1:
-                    types = ["monster","loot","trap"]
+                    types = ["Monster","Loot","Trap"]
                     weight = [0.4,0.4,0.2]
                     room = random.choices(types,weight,k=1)
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room) 
                 case 2:
-                    types = ["monster","loot","trap"]
+                    types = ["Monster","Loot","Trap"]
                     weight = [0.33,0.34,0.33,]
                     room = random.choices(types,weight,k=1)
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
                 case 3:
-                    types = ["monster","loot","trap"]
+                    types = ["Monster","Loot","Trap"]
                     weight = [0.4,0.20,0.4]
                     room = random.choices(types,weight,k=1)
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
@@ -398,8 +394,8 @@ class Rogues(commands.Cog):
         redo = self.identify(name=member.name)
         print(isinstance(redo,Player))
         redo.turnDone = False
-    @commands.command()
     #@commands.check(is_me)
+    @commands.command()
     async def loot(self,ctx,test:str=None,player2:nextcord.Member=None): #for now this is a test command for me
         player = self.identify(ctx.author)
         if player2 != None:
@@ -474,11 +470,22 @@ class Rogues(commands.Cog):
         everyone = guild.default_role
         global difficulty
         difficulty = 0
-        j=1
+        global uid
+        uid=0
+        j = 1
         for i in people:
-            print(i)
-            await self.addPlayer(i,j)
-            j+=1
+            j = await self.addPlayer(i,j)
+        match len(people)/2:#how many rogues there will be
+            case 2:
+                bads = 1
+            case 3:
+                bads = 2
+            case 4:
+                if len(people)>8: bads=3
+                else:
+                    bads = 2
+        print("bads ",bads)
+        del people
         # Need to get the bot to create the channels.
         self.Deck()
         # Need to add Map related stuff
@@ -753,6 +760,7 @@ class Rogues(commands.Cog):
                     loot = random.choice(victim.hand)
                     await killer.addScroll(Player,loot)
                     await msg.edit(content=f"{msg.content}\nYou have received {victim.name}'s {loot.scrollName} scroll")
+                killer.greed +=1
         for i in victim.hand: # empty the dead's hand
             victim.hand.remove(i)
             deck.append(i)
@@ -1337,9 +1345,12 @@ class Scroll: #This will all be internal. No player interaction to create scroll
             case "teleport": # just used to avoid an attack for right now so not a lot needs to be here.
                 print(f"{interaction.user} casted {self.scrollName}")
                 if caster.reacting == True:
-                    await safeRoom.send(f"{caster.name} teleported away from {target.name}'s attack")
+                    await caster.cRoom.channel.send(f"{caster.name} teleported away from {target.name}'s attack")
                     caster.reacting = False
                     used = True
+                    if caster.pRoom!=None:
+                        await Rogues.moving(Rogues,caster.cRoom,caster.pRoom,caster,True)
+
                 else:
                     print(self.scrollName)
                     if caster.pRoom!=None:
@@ -1360,7 +1371,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     caster.reacting = False
                 else:
                     print(self.scrollName)
-                    await interaction.send(f"The {self.scrollName} scroll can only be used in reaction to another spell.")
+                    await interaction.send(f"The {self.scrollName} scroll can only be used in reaction to another spell.",ephemeral=True)
                     return
             case "mold earth":
                 print(f"{interaction.user} casted {self.scrollName}")

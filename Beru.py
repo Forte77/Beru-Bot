@@ -205,4 +205,3 @@ async def on_ready():
     bot.load_extension("Rogues")
     print("Beru has been summoned")
 bot.run(token)
-# Wake up get someone to test full hand stuff.
