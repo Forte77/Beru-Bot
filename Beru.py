@@ -148,7 +148,7 @@ async def hello(interaction:nextcord.Interaction):
     await interaction.response.send_message(f"Hey {interaction.user.mention}!",ephemeral=True)
 @bot.slash_command(name="say",description="Tell Beru what to say.") #fun little thing for me to play around with
 @application_checks.check(is_me)
-async def say(interaction:nextcord.Interaction,thing_to_say:str):
+async def say(interaction:nextcord.Interaction,thing_to_say:str,channel:nextcord.TextChannel=None):
     await interaction.response.send_message(f"{interaction.user.name} said: '{thing_to_say}'",ephemeral=False)
 @say.error
 async def errorhandler(ctx:nextcord.Interaction,error):
