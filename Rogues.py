@@ -307,8 +307,9 @@ class Rogues(commands.Cog):
         self.createScroll("Polymorph","Ancillary",True,False,False,2,"Now that I don't have a brain I don't even know what that means.","Turn your opponent into a useless wad of meat. They will be unable to complete actions for a limited time.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/polymorph.png?raw=true",True) # Prevent another player from taking action twice CAN only be countered.
         self.createScroll("Invisibility","Defensive",False,False,False,3,"If I can't see them, then they can't see me.","You can go invisible to avoid attacks or cast it preemptively to be invisible for a limited time.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/invisibility.png?raw=true") # Rogues have extra perks with invis
         self.createScroll("Magic Shield","Defensive",False,False,False,6,"No you are not the Shield Hero","Project a magical shield that will protect you from a single attack.\n*Gives 1 shield*","https://github.com/Forte77/Beru-Bot/blob/initialBeru/magicshield.png?raw=true",True) # Blocks a spell
-        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Just don't seek revenge...","Heal yourself or others.\n*Gives 1 HP*","https://github.com/Forte77/Beru-Bot/blob/initialBeru/curewounds.png?raw=true",True) # heal #
-        self.createScroll("Explosion","Offensive",False,True,False,1,"爆裂爆裂ラララ","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/explosion.png?raw=true")
+        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Just don't seek revenge...","Heal yourself or others.\n*Gives 1 HP*","https://github.com/Forte77/Beru-Bot/blob/initialBeru/curewounds.png?raw=true",True) # heal 
+        self.createScroll("Explosion","Offensive",False,True,False,1,"爆裂爆裂ラララ","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/explosion.png?raw=true") # This was a late addition back when it was a card game so I had forgotten to add it to the bot
+        self.createScroll("Smite","Offensive",False,True,False,3,"You're God!", "Wield divine energy to smite ANY other player regardless of what room they are in. However this is only if you are able to *divine* the location of the player. If you are wrong you will be punished.",)
         if evil == True:
             self.createScroll("Steal","Offensive",False,False,True,4,"Please don't steal someone's panties.","Steal a random scroll from your target","https://github.com/Forte77/Beru-Bot/blob/initialBeru/steal.png?raw=true",True) # TBD
             self.createScroll("Blood Altar","Offensive",False,False,False,3,"A fine tribute to the Gore Queen Garuda","Sap health from your enemy if damage is dealt to enemy health.","https://github.com/Forte77/Beru-Bot/blob/initialBeru/bloodaltar.png?raw=true",True) # Sap Health if uninterupted. Won't heal if it is CBA
@@ -396,7 +397,7 @@ class Rogues(commands.Cog):
         redo.turnDone = False
     #@commands.check(is_me)
     @commands.command()
-    async def loot(self,ctx,test:str=None,player2:nextcord.Member=None): #for now this is a test command for me
+    async def loots(self,ctx,test:str=None,player2:nextcord.Member=None): #for now this is a test command for me
         player = self.identify(ctx.author)
         if player2 != None:
             player2 = self.identify(player2)
@@ -739,7 +740,7 @@ class Rogues(commands.Cog):
                 # make a death function
                 await Rogues.death(Rogues,victim,attacker,victim.reborn)
     async def death(self,victim,killer=None,wish=False,soul=None):
-        await safeRoom.send(f"{victim.name} has perished.")
+        #await safeRoom.send(f"{victim.name} has perished.")
         await victim.cRoom.channel.send(f"{victim.name} has perished.")
         if killer != None: # if there is a killer
             if killer == soul: # if the killer is stupid
@@ -758,7 +759,7 @@ class Rogues(commands.Cog):
                     print("Rogue kill")
                 else:
                     loot = random.choice(victim.hand)
-                    await killer.addScroll(Player,loot)
+                    await killer.addScroll(loot)
                     await msg.edit(content=f"{msg.content}\nYou have received {victim.name}'s {loot.scrollName} scroll")
                 killer.greed +=1
         for i in victim.hand: # empty the dead's hand
@@ -1258,6 +1259,12 @@ class Rogues(commands.Cog):
         MyEmbed.add_field(name="",value=f"*{scroll.flavor}*",inline=True)
         MyEmbed.add_field(name="Serial",value=f"#{scroll.copy}",inline=True)
         await interaction.send(embed=MyEmbed,ephemeral=True)
+    async def roommate(self,caster:Player,victim:Player):
+        if caster.cRoom == victim.cRoom:
+            return True
+        else:
+            await caster.cRoom.channel.send(f"Is there a {victim.name} in the room with us right now?\n-# The answer is no. You can't attack someone who isn't here. You aren't God")
+            return False
     async def newFloor(self):
         for i in category.text_channels:
             if i.name =="saferoom":
@@ -1350,7 +1357,6 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     used = True
                     if caster.pRoom!=None:
                         await Rogues.moving(Rogues,caster.cRoom,caster.pRoom,caster,True)
-
                 else:
                     print(self.scrollName)
                     if caster.pRoom!=None:
