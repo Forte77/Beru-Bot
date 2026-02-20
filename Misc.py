@@ -76,21 +76,21 @@ class Misc(commands.Cog):
     @commands.check(is_me)
     async def justdoit(self,ctx):
         await ctx.channel.purge(limit = 1)
-        task = ["Japanese","Coding","Skyward"]
+        task = ["Japanese","Coding","Sprites"]
         japanese = ["Short quiz","Long quiz","Umi Lesson","Umi review"]
         review = ["review","speak","listen","blitz"]
         coding = ["Lua","nextcord Bot"]
         work = random.choice(task)
-        if work == "Skyward":
-            await ctx.send("Your chosen task is: " + work +"\nGo start or continue whatever video course you were on.")
+        if work == "Sprites":
+            await ctx.send("Your chosen task is: " + work +"\nGet back on that grind and finish the BN3 pack.")
         elif work == "Coding":
             await ctx.send("Your chosen task is: " + work)
             work1 = random.choice(coding)
             await ctx.send("https://www.udemy.com/home/my-courses/learning/")
             if work1 == "Lua":
-                await ctx.send("Do your Damn Lua Course\nDo it for Mega Man and Bass!!\nAt least get through one or two videos. You've gotta finish the course before you can make the Perfect Navi")
+                await ctx.send("Pick the Lua course back up. Almost done")
             elif work1 == "nextcord Bot":
-                await ctx.send("Continue the nextcord Bot course.\nTry to get through a whole section today.")
+                await ctx.send("Work on the game.")
         elif work == "Japanese":
             work2 = random.choice(japanese)
             await ctx.send("Your chosen task is: " + work +" today!\n"+"Specifically doing a: "+work2)

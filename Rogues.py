@@ -867,14 +867,17 @@ class Rogues(commands.Cog):
             count = 0
             if smite:
                 for i in floor:
-                    self.add_item(Rogues.mButt(caster=self.caster,smite=smite,victim=victim,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(count)))
+                    bID = f"{count}{caster.mem.id}"
+                    self.add_item(Rogues.mButt(caster=self.caster,smite=smite,victim=victim,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
                     count+=1
             else:
                 for i in self.caster.nRoom:
-                    self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(count)))
+                    bID = f"{count}{caster.mem.id}"
+                    self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
                     count+=1
                 if self.caster.cRoom.prev != []:
-                    self.add_item(Rogues.mButt(caster=self.caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=str(count)))
+                    bID = f"{count}{caster.mem.id}"
+                    self.add_item(Rogues.mButt(caster=self.caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=bID))
         async def on_timeout(self):
             print("Move View Timeout")
             if self.smite:
@@ -916,9 +919,10 @@ class Rogues(commands.Cog):
                     self.view.clear_items()
                     count = 0
                     for i in self.caster.cRoom.next:
-                        self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(count)))
+                        bID = f"{count}{self.caster.mem.id}"
+                        self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
                         count+=1
-                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Previous Rooms",style=nextcord.ButtonStyle.blurple,custom_id=str(count)))
+                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Previous Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
                     await self.view.oginter.edit_original_message(view=self.view)
                 elif self.label == "Previous Rooms":
                     for i in self.view.children:
@@ -926,9 +930,10 @@ class Rogues(commands.Cog):
                     self.view.clear_items()
                     count = 0
                     for i in self.caster.cRoom.prev:
-                        self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(count)))
+                        bID = f"{count}{self.caster.mem.id}"
+                        self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
                         count+=1
-                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=str(count)))
+                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
                     await self.view.oginter.edit_original_message(view=self.view)
                 else:
                     if self.label == "The Saferoom":
@@ -1166,7 +1171,7 @@ class Rogues(commands.Cog):
             if baku:
                 self.baku = baku
             self.scry = scry
-            for i in scrolls:
+            for i in scrolls:#I made the custom ids here match the serial number of the scrolls so I don't believe I'll have to add in a specific button ID the same way I did for the others
                 if full:
                     self.extra = extra
                     self.msg = msg
@@ -1242,7 +1247,6 @@ class Rogues(commands.Cog):
                         self.t1 = Rogues.identify(Rogues,name=self.label)
                         self.disabled = True
                         self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78),embed=self.embed))
-                        print("did the embed work?")
                         await interaction.edit_original_message(embed=self.embed,view=self.view)
                         self.view.setT(target=self.label)
                         print("saving target 1?")
@@ -1286,20 +1290,22 @@ class Rogues(commands.Cog):
                     if i.name == self.caster.name:
                         print("same same")
                     else:
-                        self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=self.embed,full=full,msg=msg))
+                        bID = f"{i.uid}{caster.mem.id}"
+                        self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,embed=self.embed,full=full,msg=msg))
             else:
                 for i in self.caster.cRoom.guests:
+                    bID = f"{i.uid}{caster.mem.id}"
                     if scroll.type == "Defensive" and i.name == caster.name:
-                        self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label="Myself",style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=embed))
+                        self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label="Myself",style=nextcord.ButtonStyle.green,custom_id=bID,embed=embed))
                     elif scroll.type == "Offensive" and i.name == caster.name:
                         print("same same")
                     elif scroll.type == "Ancillary" and i.name == caster.name:
                         if scroll.name == "Cure Wounds":
-                            self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label="Myself",style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=embed))
+                            self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label="Myself",style=nextcord.ButtonStyle.green,custom_id=bID,embed=embed))
                         else:
                             print("same same2")
                     else:
-                        self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=str(i.uid),embed=embed))
+                        self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,embed=embed))
         def getT(self): # getter to track 1st Target
             print(self.test.name)
             return self.test
@@ -1766,7 +1772,8 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 await caster.mem.send(f"Your soul is now linked with {victim.name}.\n**Regardless of any other factors** if you both are the only ones to make it out of the dungeon __alive__ you both will be considered the winners of this excursion.\n**However if one of you dies. You both perish.**")
                 await victim.mem.send(f"Your soul is now linked with {caster.name}.\n**Regardless of any other factors** if you both are the only ones to make it out of the dungeon __alive__ you both will be considered the winners of this excursion.\n**However if one of you dies. You both perish.**")
             case "wish":
-                # wish idea: second life. when you die you are reborn(full health, 3 random scrolls from deck) into a previous room if applicable.
+                # wish 1: second life. when you die you are reborn(full health, 3 random scrolls from deck) into a previous room if applicable.
+                # wish 2: Wish to create power. Creates a duplicate spell and gives it to the wisher. Add in rarity
                 # wish idea: wish will get added back into the deck two additional times. 3 wishes total in the game. after that no more.
                 wCount +=1
                 # Make a wish view with buttons for each wish
