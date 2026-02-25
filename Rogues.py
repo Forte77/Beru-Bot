@@ -62,6 +62,8 @@ class Player:
     greed = 0
     reborn = False
     pCount = 0
+    bID = 0
+    #potentially just add a player variable that is initially their discord uid and then increment that to use as custom ID for their buttons
     def __init__(self,player:nextcord.Member,uid):
         if player.nick!=None:self.name = player.nick
         else: self.name = player.name
@@ -83,6 +85,8 @@ class Player:
         self.greed = 0
         self.reborn = False
         self.pCount = 0
+        self.bID = player.id
+        print(self.bID)
         print("player created")
     def setRooms(self):
         self.nRoom = self.cRoom.next
@@ -126,6 +130,7 @@ class Room:
     guests = []
     roomType = "" # monster loot trap exit
     cleared = False
+    first = False # Bool for when the room was first entered
     def __init__(self,name,id,exit,roomType):
         self.id = id
         self.name = name
@@ -136,6 +141,7 @@ class Room:
         self.prev = []
         self.guests = []
         self.channel = nextcord.TextChannel
+        self.first = True
     def guestList(self):
         guestlist = ""
         for i in self.guests:
@@ -150,17 +156,20 @@ class Room:
     async def event(self,user:Player=None):
         match (self.roomType):
             case "Safe":
-                print(f"{self.roomType} event")# Event for Safe room will only be triggered as a result from delve moving to a new floor
-                match difficulty:
-                    case 0:
-                        msg = "I've created a safe spot in the dungeon for this floor. Please discuss with your party members and head out to find the exit to the next floor."
-                    case 1:
-                        msg = "We should regroup here. Something about that chest felt cursed."
-                    case 2:
-                        msg = f"My suspicions have been confirmed. That chest a while ago was indeed cursed. {bads} of your party members have been cursed to let out their inner greed. I fear they are planning to eliminate the rest of you. As we reach saferooms like this one I will allow the party to discuss for a few minutes and hold a vote. I will trap whoever is voted into a *Magic Jail* where they will remain until we make it out of this dungeon. They will not die but they will not be a participant in this expedition any longer."
-                    case 3:
-                        msg = "I have created another safe room. Please decide whether someone should be *Magic Jailed*"
-                await Rogues.talk(Rogues,msg,self)
+                if self.first:
+                    print(f"{self.roomType} event")# Event for Safe room will only be triggered as a result from delve moving to a new floor
+                    match difficulty:
+                        case 0:
+                            msg = "I've created a safe spot in the dungeon for this floor. Please discuss with your party members and head out to find the exit to the next floor."
+                        case 1:
+                            msg = "We should regroup here. Something about that chest felt cursed."
+                        case 2:
+                            msg = f"My suspicions have been confirmed. That chest a while ago was indeed cursed. {bads} of your party members have been cursed to let out their inner greed. I fear they are planning to eliminate the rest of you. As we reach saferooms like this one I will allow the party to discuss for a few minutes and hold a vote. I will trap whoever is voted into a *Magic Jail* where they will remain until we make it out of this dungeon. They will not die but they will not be a participant in this expedition any longer."
+                        case 3:
+                            msg = "I have created another safe room. Please decide whether someone should be *Magic Jailed*"
+                    await Rogues.talk(Rogues,msg,self)
+                else:
+                    await self.channel.send("Welcome back to The Saferoom")
             case "Loot":
                 print(f"{self.roomType} event")# Event for rooms with a chest in them
                 await self.channel.send(f"{user.name} has chosen to open the treasure chest. Everyone in the room will now be rewarded.")
@@ -361,22 +370,22 @@ class Rogues(commands.Cog):
                     types = ["Monster","Loot","Trap"]
                     weight = [0.15,0.80,0.05]
                     room = random.choices(types,weight,k=1)
-                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=str(room[0]))
                 case 1:
                     types = ["Monster","Loot","Trap"]
                     weight = [0.4,0.4,0.2]
                     room = random.choices(types,weight,k=1)
-                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room) 
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=str(room[0]))
                 case 2:
                     types = ["Monster","Loot","Trap"]
                     weight = [0.33,0.34,0.33,]
                     room = random.choices(types,weight,k=1)
-                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=str(room[0]))
                 case 3:
                     types = ["Monster","Loot","Trap"]
                     weight = [0.4,0.20,0.4]
                     room = random.choices(types,weight,k=1)
-                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=room)
+                    room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=str(room[0]))
                 case _:
                     await safeRoom.send("Something went wrong creating a room")
         room.channel = await guild.create_text_channel(name=room.name,category=category,position=RC,topic="A random room in the dungeon.",overwrites={everyone:nextcord.PermissionOverwrite(view_channel=False,read_messages=False,send_messages=False)})
@@ -644,23 +653,28 @@ class Rogues(commands.Cog):
             print("already moved")
             await interaction.response.send_message("You have already moved in this turn you will need to end your turn before you can move on.")
             return
-        if caster.cRoom.roomType == "Monster":
-            print("monster room")
-            if caster.cRoom.cleared == False:
-                print("not cleared yet M")
-                await interaction.response.send_message("You must deal with the monster in the room first.")
-                return
-        if caster.cRoom.roomType == "Loot":
-            print("leaving loot room")
-            await interaction.response.send_message("You are leaving the loot behind. It may not be here when/if you return.")
-        if caster.nRoom!=[]:
+        if caster.nRoom != []:
+            if caster.cRoom.roomType == "Monster":
+                print("monster room")
+                if caster.cRoom.cleared == False:
+                    print("not cleared yet M")
+                    await interaction.response.send_message("You must deal with the monster in the room first.")
+                    return
+            if caster.cRoom.roomType == "Loot":
+                print("leaving loot room")
+                await caster.mem.send("You are leaving the loot behind. It may not be here when/if you return.",ephemeral=True)
             print(caster.nRoom)
             MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
             MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
             moving = Rogues.mView(interaction,caster)
-            await interaction.response.send_message(embed=MyEmbed,view=moving)
+            await interaction.send(embed=MyEmbed,view=moving)
         else:
-            await interaction.response.send_message("There are no further rooms that extend beyond the current room. If this is an exit room please use the delve command to vote to go to the next floor.")
+            print("No next room. Go back or wait?")
+            MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
+            MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
+            print("to view?")
+            moving = Rogues.mView(interaction,caster,prev=True)
+            await interaction.response.send_message(embed=MyEmbed,view=moving)
     @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
     async def delve(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
@@ -692,24 +706,21 @@ class Rogues(commands.Cog):
         MyEmbed = nextcord.Embed(title = caster.name, description = "This is your path.",color = nextcord.Colour(0xFFD700))
         MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
         first = True
-        print(f"Building map for {caster.name}")
         if caster.map == [safe]:
-            print("Caster is lazy")
             await interaction.response.send_message("You have not explored the dungeon yet...get off your ass.")
             return
         else:
-            print("Caster not lazy")
-            print(caster.map)
             for i in caster.map:
-                print(f"mapping {i.name}")
                 if first:
                     path = "The Saferoom"
                     first = False
                 elif i == safe:
                     path = f"{path}-->The Saferoom"
                 else:
-                    path = f"{path}-->{i.name} a(n) {i.roomType} room"
-        MyEmbed.add_field(title=f"Floor {floornum}",value=f"Pathing:\n{path}")
+                    path = f"{path}-->**{i.name}** a(n) **{i.roomType}** room"
+        print("path done?")
+        MyEmbed.add_field(name=f"Floor {floornum}",value=f"__Pathing:__\n{path}",inline=False)
+        print ("embed done")
         await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
     @player.error
     async def errorhandler(ctx:nextcord.Interaction,error):
@@ -864,20 +875,32 @@ class Rogues(commands.Cog):
                 self.smite = True
             else:
                 self.smite = False
-            count = 0
             if smite:
                 for i in floor:
-                    bID = f"{count}{caster.mem.id}"
+                    print("move bID testing")
+                    bID = f"{caster.bID}"
+                    caster.bID += 1
                     self.add_item(Rogues.mButt(caster=self.caster,smite=smite,victim=victim,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
-                    count+=1
             else:
-                for i in self.caster.nRoom:
-                    bID = f"{count}{caster.mem.id}"
-                    self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
-                    count+=1
-                if self.caster.cRoom.prev != []:
-                    bID = f"{count}{caster.mem.id}"
-                    self.add_item(Rogues.mButt(caster=self.caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=bID))
+                if prev == False:
+                    for i in self.caster.nRoom:
+                        bID = f"{caster.bID}"
+                        caster.bID += 1
+                        self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
+                    if self.caster.cRoom.prev != []:
+                        bID = f"{caster.bID}"
+                        caster.bID += 1
+                        self.add_item(Rogues.mButt(caster=self.caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=bID))
+                else:
+                    print(f"prev is {prev}")
+                    for i in self.caster.cRoom.prev:
+                        bID = f"{caster.bID}"
+                        caster.bID += 1
+                        self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,prev=True))
+                    bID = f"{self.caster.bID}"
+                    self.caster.bID += 1
+                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
+                    print("previous room buttons added")
         async def on_timeout(self):
             print("Move View Timeout")
             if self.smite:
@@ -917,22 +940,24 @@ class Rogues(commands.Cog):
                     for i in self.view.children:
                         i.disabled =True
                     self.view.clear_items()
-                    count = 0
                     for i in self.caster.cRoom.next:
-                        bID = f"{count}{self.caster.mem.id}"
+                        bID = f"{self.caster.bID}"
+                        self.caster.bID += 1
                         self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
-                        count+=1
+                    bID = f"{self.caster.bID}"
+                    self.caster.bID += 1
                     self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Previous Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
                     await self.view.oginter.edit_original_message(view=self.view)
                 elif self.label == "Previous Rooms":
                     for i in self.view.children:
                         i.disabled =True
                     self.view.clear_items()
-                    count = 0
                     for i in self.caster.cRoom.prev:
-                        bID = f"{count}{self.caster.mem.id}"
+                        bID = f"{self.caster.bID}"
+                        self.caster.bID += 1
                         self.view.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
-                        count+=1
+                    bID = f"{self.caster.bID}"
+                    self.caster.bID += 1
                     self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
                     await self.view.oginter.edit_original_message(view=self.view)
                 else:
@@ -967,9 +992,6 @@ class Rogues(commands.Cog):
                 self.baku = baku
             self.scry = scry
         async def callback(self,interaction:nextcord.Interaction):
-            if Rogues.identify(Rogues,interaction.user).uid != self.caster.uid:
-                print("Wrong person. Butt")
-                return
             try:
                 check = self.view.getS()
                 await interaction.response.defer()
@@ -1065,9 +1087,12 @@ class Rogues(commands.Cog):
                     if spell.aim:
                         print("cast")
                         MyEmbed = nextcord.Embed(title = "Who will be your victim(s)?", description = "These are the other Players in the room",color = nextcord.Colour(0xFFD700))
+                        if len(self.caster.cRoom.guests)==1:
+                            await interaction.send("There is no one in this room to target")
+                            return
                         for i in self.caster.cRoom.guests:
                             if spell.type == "Offensive" and i.name == self.caster.name:
-                                print("Same same")
+                                print("Can't target self")
                             else:
                                 MyEmbed.add_field(name=f"Player {i.uid}",value=i.name,inline=True)
                         print(f"Spell: {spell.name}")                    
@@ -1153,10 +1178,14 @@ class Rogues(commands.Cog):
                     for i in self.view.children:
                         i.disabled = True
                         print(f"{i.label} disabled. RCallback")
-                    await interaction.edit_original_message(view=self.view)
+                    await self.view.oginter.edit_original_message(view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"1030 React Button Callback. An error occured: {e}")
+                print(f"1173 React Button Callback. An error occured: {e}")
+                for i in self.view.children:
+                    i.disabled = True
+                await self.view.oginter.edit_original_message(view=self.view)
+                self.view.stop()
     class Reacts(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scrolls,victim=None,caster=None,react=False,give=False,show=False,block=True,cast=False,info=False,same=False,full=False,extra=None,msg=None,baku=False,scry=False):
             super().__init__(timeout=45)
@@ -1228,10 +1257,6 @@ class Rogues(commands.Cog):
             self.full = full
             self.msg = msg
         async def callback(self,interaction:nextcord.Interaction):
-            if Rogues.identify(Rogues,interaction.user).uid != self.caster.uid:
-                print("Wrong person. AimButt")
-                return
-            await interaction.response.defer()
             if self.full:
                 self.t1 = Rogues.identify(Rogues,name=self.label)
                 await self.t1.addScroll(self.scroll)
@@ -1242,12 +1267,11 @@ class Rogues(commands.Cog):
                 return
             else:
                 try:
-                    await interaction.response.defer()
                     if self.scroll.aim2 and not self.view.aimCheck():
                         self.t1 = Rogues.identify(Rogues,name=self.label)
                         self.disabled = True
                         self.view.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label="Same person",style=nextcord.ButtonStyle.blurple,custom_id=str(78),embed=self.embed))
-                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        await self.view.oginter.edit_original_message(embed=self.embed,view=self.view)
                         self.view.setT(target=self.label)
                         print("saving target 1?")
                         return
@@ -1264,17 +1288,21 @@ class Rogues(commands.Cog):
                             await self.caster.use(interaction,self.scroll,target=self.t1.mem,target2=self.t2.mem)
                         for i in self.view.children:
                             i.disabled = True
-                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        await self.view.oginter.edit_original_message(embed=self.embed,view=self.view)
                         self.view.stop()
                     else:
                         self.t1 = Rogues.identify(Rogues,name=self.label)
                         await self.caster.use(interaction,self.scroll,target=self.t1.mem)
                         for i in self.view.children:
                             i.disabled = True
-                        await interaction.edit_original_message(embed=self.embed,view=self.view)
+                        await self.view.oginter.edit_original_message(embed=self.embed,view=self.view)
                         self.view.stop()
                 except Exception as e:
-                    print(f"1186 Aim button callback. An error occured: {e}")
+                    print(f"1283 Aim button callback. An error occured: {e}")
+                    for i in self.view.children:
+                        i.disabled = True
+                    await self.view.oginter.edit_original_message(view=self.view)
+                    self.view.stop()
     class Aiming(nextcord.ui.View):
         def __init__(self,oginter:nextcord.Interaction,scroll=None,caster=None,embed=None,full=False,msg=None):
             super().__init__(timeout=60)
@@ -1290,11 +1318,13 @@ class Rogues(commands.Cog):
                     if i.name == self.caster.name:
                         print("same same")
                     else:
-                        bID = f"{i.uid}{caster.mem.id}"
+                        bID = f"{self.caster.bID}"
+                        self.caster.bID += 1
                         self.add_item(Rogues.AimButt(scroll=self.scroll,caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,embed=self.embed,full=full,msg=msg))
             else:
                 for i in self.caster.cRoom.guests:
-                    bID = f"{i.uid}{caster.mem.id}"
+                    bID = f"{self.caster.bID}"
+                    self.caster.bID += 1
                     if scroll.type == "Defensive" and i.name == caster.name:
                         self.add_item(Rogues.AimButt(scroll=scroll,caster=caster,label="Myself",style=nextcord.ButtonStyle.green,custom_id=bID,embed=embed))
                     elif scroll.type == "Offensive" and i.name == caster.name:
