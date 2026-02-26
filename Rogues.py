@@ -488,7 +488,7 @@ class Rogues(commands.Cog):
         j = 1
         for i in people:
             j = await self.addPlayer(i,j)
-        match len(people)/2:#how many rogues there will be
+        match int(len(people)/2):#how many rogues there will be
             case 2:
                 bads = 1
             case 3:
@@ -497,7 +497,8 @@ class Rogues(commands.Cog):
                 if len(people)>8: bads=3
                 else:
                     bads = 2
-        print("bads ",bads)
+            case _:
+                print("Something happened")
         del people
         # Need to get the bot to create the channels.
         self.Deck()
@@ -514,12 +515,12 @@ class Rogues(commands.Cog):
     @application_checks.check(is_me or ongoing)    
     async def teardown(self,interaction:nextcord.Interaction):
         await interaction.response.send_message("Shutting down Game...")
+        global safe
+        del safe
         await playerRole.delete()
         for i in category.channels:
             await i.delete()
         await category.delete()
-        global safe
-        del safe
         for x in floor:
             del x
         print("g")
@@ -531,15 +532,22 @@ class Rogues(commands.Cog):
         for j in deck:
             del j
         print("o")
+        global ready
         ready = True
         deck = []
+        global evil
         evil = False
         players = []
+        global deads
         deads = []
+        global bads
         bads = 0
+        global start
         start = False
+        global vote
         vote = 0
         floor = []
+        global floornum
         floornum = 1
         print("GAME OVER")
     @teardown.error
@@ -662,7 +670,7 @@ class Rogues(commands.Cog):
                     return
             if caster.cRoom.roomType == "Loot":
                 print("leaving loot room")
-                await caster.mem.send("You are leaving the loot behind. It may not be here when/if you return.",ephemeral=True)
+                await caster.mem.send("You are leaving the loot behind. It may not be here when/if you return.")
             print(caster.nRoom)
             MyEmbed = nextcord.Embed(title = caster.name, description = "Where you can move to...",color = nextcord.Colour(0x6f00eb))
             MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
@@ -740,12 +748,15 @@ class Rogues(commands.Cog):
         who.pRoom = fro
         who.nRoom = to.next
         if fro == safe:
+            print("from safe")
             await Rogues.overwrite(Rogues,fro.channel,who,True,safeVC)
             await Rogues.overwrite(Rogues,to.channel,who)
         elif to == safe:
+            print("to safe")
             await Rogues.overwrite(Rogues,fro.channel,who,True)
             await Rogues.overwrite(Rogues,to.channel,who,False,safeVC)
         else:
+            print("no safe")
             await Rogues.overwrite(Rogues,to.channel,who)
             await Rogues.overwrite(Rogues,fro.channel,who,True)
         if tele == False:
@@ -871,7 +882,7 @@ class Rogues(commands.Cog):
             self.oginter = oginter
             self.caster = caster
             self.prev = prev
-            if smite:
+            if smite: # Smite in this view is a whole different bag of special.
                 self.smite = True
             else:
                 self.smite = False
@@ -880,27 +891,25 @@ class Rogues(commands.Cog):
                     print("move bID testing")
                     bID = f"{caster.bID}"
                     caster.bID += 1
-                    self.add_item(Rogues.mButt(caster=self.caster,smite=smite,victim=victim,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
+                    self.add_item(Rogues.mButt(caster=caster,smite=smite,victim=victim,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
             else:
-                if prev == False:
-                    for i in self.caster.nRoom:
+                if prev == False: # I'll be honest I kinda forogot why I added a prev bool and put it in the buttons as well so for now it's used for this.
+                    for i in caster.nRoom:
                         bID = f"{caster.bID}"
                         caster.bID += 1
-                        self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
+                        self.add_item(Rogues.mButt(caster=caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID))
                     if self.caster.cRoom.prev != []:
                         bID = f"{caster.bID}"
                         caster.bID += 1
-                        self.add_item(Rogues.mButt(caster=self.caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=bID))
-                else:
-                    print(f"prev is {prev}")
-                    for i in self.caster.cRoom.prev:
+                        self.add_item(Rogues.mButt(caster=caster,label="Previous Rooms",style=nextcord.ButtonStyle.red,custom_id=bID))
+                else: # This is for when they're in a dead end room
+                    for i in caster.cRoom.prev:
                         bID = f"{caster.bID}"
                         caster.bID += 1
-                        self.add_item(Rogues.mButt(caster=self.caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,prev=True))
-                    bID = f"{self.caster.bID}"
-                    self.caster.bID += 1
-                    self.view.add_item(Rogues.mButt(caster=self.caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
-                    print("previous room buttons added")
+                        self.add_item(Rogues.mButt(caster=caster,label=i.name,style=nextcord.ButtonStyle.green,custom_id=bID,prev=True))
+                    bID = f"{caster.bID}"
+                    caster.bID += 1
+                    self.add_item(Rogues.mButt(caster=caster,prev=True,label="Next Rooms",style=nextcord.ButtonStyle.blurple,custom_id=bID))
         async def on_timeout(self):
             print("Move View Timeout")
             if self.smite:
@@ -1493,6 +1502,11 @@ class Rogues(commands.Cog):
         else:
             await caster.cRoom.channel.send(f"{caster.name} attempted to use a scroll directed at {victim.name}.")
             return False
+    async def dungeon(self):
+        for i in players:
+            i.turnDone = False
+            i.movement = True
+        
     async def newFloor(self):
         for i in category.text_channels:
             if i.name =="saferoom":
