@@ -310,35 +310,35 @@ class Rogues(commands.Cog):
                 await room.channel.send(embed=MyEmbed)
     def Deck(self): #create the "deck" of scrolls for the dungeon
         print("Creating Deck") # counter block avoid
-        self.createScroll("Fireball","Offensive",True,True,True,7,"So anyway I started blasting.","A basic attack spell.","Beru-Bot/Resources/fireball.png",True) # 7 Fireball can be countered blocked and avoided
-        self.createScroll("Eldritch Blast","Offensive",True,True,False,5,"Almost as good as that Ghost Boy","A cryptic attack that always finds it's target.","Beru-Bot/Resources/eldritch.png",True) # Can't be avoided
-        self.createScroll("Call Lightning","Offensive",False,True,True,5,"Talk about a STATIC SHOCK","Summon magical lightning bolts from above that can not be countered.","Beru-Bot/Resources/callliightning.png",True,True) # Can't be countered
-        self.createScroll("Dragon Breath","Offensive",True,False,True,5,"Girl dragons are just Reeking of feminine beauty","A flame so hot it bypasses through shields of any kind.","Beru-Bot/Resources/dragonsbreath.png",True) # Can't be blocked
-        self.createScroll("Explosion","Offensive",False,True,False,1,"爆裂爆裂ラララ","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","Beru-Bot/Resources/explosion.png") # This was a late addition back when it was a card game so I had forgotten to add it to the bot
-        self.createScroll("Smite","Offensive",False,True,False,3,"You're God!", "Wield divine energy to smite ANY other player regardless of what room they are in. However this is only if you are able to *divine* the location of the player. If you are wrong you will be punished.","Beru-Bot/Resources/smite.png",True) # I had this idea today while making the message for if a player tries to attack someone in another room.
-        self.createScroll("Holy Shield","Defensive",False,False,False,1,"Nothing can pierce my Holy Pope Box","A shield of Divinity.\n*Grants +5 shields*","Beru-Bot/Resources/holyshield.png") # Super Strong long lasting shield. numbers will be worked out later
-        self.createScroll("Teleport","Defensive",False,False,False,6,"What the hell is all this black stuff on me?","A spell that can be used to return to a previous room or avoid an attack.","Beru-Bot/Resources/teleport.png") # 6 teleport scrolls it can not be countered blocked or avoided (it's not an attack or aimed at anyone)
-        self.createScroll("Counter","Defensive",False,True,True,7,"*FULL Counter*","A spell that can be used to counter attack someone that tried to cast a spell at you.","Beru-Bot/Resources/counter.png") # Counter spell can be blocked and avoided but not countered
-        self.createScroll("Mold Earth","Defensive",False,False,False,3,"THE BOULDER is conflicted","A defensive type of spell that can grant a shield to two different people or you can double up on one person or yourself","Beru-Bot/Resources/moldearth.png",True,True) # Covers two players #
-        self.createScroll("Barbarian Rage","Defensive",False,False,False,3,"IMPOTENT RAGE!!!\n-# does not actually make you impotent","A spell that activates the dormant barbarian rage that sleeps in anyone. Allowing them to shield through attacks out of sheer anger.\n*Gives 2 shields*","Beru-Bot/Resources/barbarianrage.png") # Blocks TWO instances of damage
-        self.createScroll("Invisibility","Defensive",False,False,False,3,"If I can't see them, then they can't see me.","You can go invisible to avoid attacks or cast it preemptively to be invisible for a limited time.","Beru-Bot/Resources/invisibility.png") # Rogues have extra perks with invis
-        self.createScroll("Magic Shield","Defensive",False,False,False,6,"No you are not the Shield Hero","Project a magical shield that will protect you from a single attack.\n*Gives 1 shield*","Beru-Bot/Resources/magicshield.png",True) # Blocks a spell
-        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Just don't seek revenge...","Heal yourself or others.\n*Gives 1 HP*","Beru-Bot/Resources/curewounds.png",True) # heal 
-        self.createScroll("Polymorph","Ancillary",True,False,False,2,"Now that I don't have a brain I don't even know what that means.","Turn your opponent into a useless wad of meat. They will be unable to complete actions for a limited time.","Beru-Bot/Resources/polymorph.png",True) # Prevent another player from taking action twice CAN only be countered.
-        self.createScroll("Scrying","Ancillary",False,False,False,4,"I CAN SEE THE FUTURE","Casting this spell will allow you to see one of the scrolls of your target. But they get to choose.","Beru-Bot/Resources/scrying.png",True) # The target chooses which scroll to show
-        self.createScroll("Divine Wisdom","Ancillary",False,False,False,3,"Filthy Ningen","Learn which scrolls your target owns currently.","Beru-Bot/Resources/divinewisdom.png",True) # Reveal all scrolls of one chosen player to the user
-        self.createScroll("Wish","Ancillary",False,False,False,1,"","","Beru-Bot/Resources/wish.png") # TBD
-        self.createScroll("Za Warudo","Ancillary",False,False,False,1,"","","Beru-Bot/Resources/zawarudo.png") # when prompting defensive scrolls need to also check for this.
-        self.createScroll("Soul Knot","Ancillary",False,False,False,1,"Anything for my Senpai","Tie your soul and destiny to another player.","Beru-Bot/Resources/soulknot.png",True) # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
+        self.createScroll("Fireball","Offensive",True,True,True,7,"So anyway I started blasting.","A basic attack spell.","Beru-Bot/Resources/fireball.png",1,True) # 7 Fireball can be countered blocked and avoided
+        self.createScroll("Eldritch Blast","Offensive",True,True,False,5,"Almost as good as that Ghost Boy","A cryptic attack that always finds it's target.","Beru-Bot/Resources/eldritch.png",1,True) # Can't be avoided
+        self.createScroll("Call Lightning","Offensive",False,True,True,5,"Talk about a STATIC SHOCK","Summon magical lightning bolts from above that can not be countered.","Beru-Bot/Resources/callliightning.png",2,True,True) # Can't be countered
+        self.createScroll("Dragon Breath","Offensive",True,False,True,5,"Girl dragons are just Reeking of feminine beauty","A flame so hot it bypasses through shields of any kind.","Beru-Bot/Resources/dragonsbreath.png",1,True) # Can't be blocked
+        self.createScroll("Explosion","Offensive",False,True,False,1,"爆裂爆裂ラララ","Summon an extremely powerful explosion that hurts everyone in the room. This spell can only be avoided by Teleport.","Beru-Bot/Resources/explosion.png",3) # This was a late addition back when it was a card game so I had forgotten to add it to the bot
+        self.createScroll("Smite","Offensive",False,True,False,3,"You're God!", "Wield divine energy to smite ANY other player regardless of what room they are in. However this is only if you are able to *divine* the location of the player. If you are wrong you will be punished.","Beru-Bot/Resources/smite.png",2,True) # I had this idea today while making the message for if a player tries to attack someone in another room.
+        self.createScroll("Holy Shield","Defensive",False,False,False,1,"Nothing can pierce my Holy Pope Box","A shield of Divinity.\n*Grants +5 shields*","Beru-Bot/Resources/holyshield.png",3) # Super Strong long lasting shield. numbers will be worked out later
+        self.createScroll("Teleport","Defensive",False,False,False,6,"What the hell is all this black stuff on me?","A spell that can be used to return to a previous room or avoid an attack.","Beru-Bot/Resources/teleport.png",1) # 6 teleport scrolls it can not be countered blocked or avoided (it's not an attack or aimed at anyone)
+        self.createScroll("Counter","Defensive",False,True,True,7,"*FULL Counter*","A spell that can be used to counter attack someone that tried to cast a spell at you.","Beru-Bot/Resources/counter.png",1) # Counter spell can be blocked and avoided but not countered
+        self.createScroll("Mold Earth","Defensive",False,False,False,3,"THE BOULDER is conflicted","A defensive type of spell that can grant a shield to two different people or you can double up on one person or yourself","Beru-Bot/Resources/moldearth.png",2,True,True) # Covers two players #
+        self.createScroll("Barbarian Rage","Defensive",False,False,False,3,"IMPOTENT RAGE!!!\n-# does not actually make you impotent","A spell that activates the dormant barbarian rage that sleeps in anyone. Allowing them to shield through attacks out of sheer anger.\n*Gives 2 shields*","Beru-Bot/Resources/barbarianrage.png",2) # Blocks TWO instances of damage
+        self.createScroll("Invisibility","Defensive",False,False,False,3,"If I can't see them, then they can't see me.","You can go invisible to avoid attacks or cast it preemptively to be invisible for a limited time.","Beru-Bot/Resources/invisibility.png",2) # Rogues have extra perks with invis
+        self.createScroll("Magic Shield","Defensive",False,False,False,6,"No you are not the Shield Hero","Project a magical shield that will protect you from a single attack.\n*Gives 1 shield*","Beru-Bot/Resources/magicshield.png",1,True) # Blocks a spell
+        self.createScroll("Cure Wounds","Ancillary",False,False,False,4,"Just don't seek revenge...","Heal yourself or others.\n*Gives 1 HP*","Beru-Bot/Resources/curewounds.png",1,True) # heal 
+        self.createScroll("Polymorph","Ancillary",True,False,False,2,"Now that I don't have a brain I don't even know what that means.","Turn your opponent into a useless wad of meat. They will be unable to complete actions for a limited time.","Beru-Bot/Resources/polymorph.png",2,True) # Prevent another player from taking action twice CAN only be countered.
+        self.createScroll("Scrying","Ancillary",False,False,False,4,"I CAN SEE THE FUTURE","Casting this spell will allow you to see one of the scrolls of your target. But they get to choose.","Beru-Bot/Resources/scrying.png",1,True) # The target chooses which scroll to show
+        self.createScroll("Divine Wisdom","Ancillary",False,False,False,3,"Filthy Ningen","Learn which scrolls your target owns currently.","Beru-Bot/Resources/divinewisdom.png",3,True) # Reveal all scrolls of one chosen player to the user
+        self.createScroll("Wish","Ancillary",False,False,False,1,"","","Beru-Bot/Resources/wish.png",3) # TBD
+        self.createScroll("Za Warudo","Ancillary",False,False,False,1,"","","Beru-Bot/Resources/zawarudo.png",3) # when prompting defensive scrolls need to also check for this.
+        self.createScroll("Soul Knot","Ancillary",False,False,False,1,"Anything for my Senpai","Tie your soul and destiny to another player.","Beru-Bot/Resources/soulknot.png",3,True) # Link to another player when one dies the other dies but if they are both the only two to get out then they both win.
         if evil == True:
-            self.createScroll("Steal","Offensive",False,False,True,4,"Please don't steal someone's panties.","Steal a random scroll from your target","Beru-Bot/Resources/steal.png",True) # TBD
-            self.createScroll("Blood Altar","Offensive",False,False,False,3,"A fine tribute to the Gore Queen Garuda","Sap health from your enemy if damage is dealt to enemy health.","Beru-Bot/Resources/bloodaltar.png",True) # Sap Health if uninterupted. Won't heal if it is CBA
+            self.createScroll("Steal","Offensive",False,False,True,4,"Please don't steal someone's panties.","Steal a random scroll from your target","Beru-Bot/Resources/steal.png",1,True) # TBD
+            self.createScroll("Blood Altar","Offensive",False,False,False,3,"A fine tribute to the Gore Queen Garuda","Sap health from your enemy if damage is dealt to enemy health.","Beru-Bot/Resources/bloodaltar.png",2,True) # Sap Health if uninterupted. Won't heal if it is CBA
         sn = 0
         for i in deck:
             self.serialize(i,sn) # Add serial number to the Scrolls to further help keep track of. Not sure if I'll need this tbh kinda just an added precaution in case it comes in handy
             sn +=1
         print("Deck created")
-    def createScroll(self,name,type,counter,block,avoid,count,flavor="If you see this I fucked up",effect="This spell does...something",image="image url here",aim=False,aim2=False): # Function to create scrolls for the game
+    def createScroll(self,name,type,counter,block,avoid,count,flavor="If you see this I fucked up",effect="This spell does...something",image="image url here",rank=0,aim=False,aim2=False): # Function to create scrolls for the game
         i = 0
         global deck
         while (i < count):
@@ -408,6 +408,39 @@ class Rogues(commands.Cog):
             if vc!=None:
                 await vc.set_permissions(caster.mem,view_channel=True,read_messages=True,send_messages=True)
                 print(f"Permissions for {room.name} updated for {caster.name} to Allow.")
+    def deckWeight(self,deck): # I want to make a function to modify the weight of each scroll in the deck. I will either use this specifically when the difficulty changes or everytime Enemy Loottable is triggered.
+        #weighted = list() ---------- Originally thought I needed this but I don't think I do
+        weights = []
+        c = 0
+        r = 0
+        u = 0
+        match difficulty:
+            case 1:
+                c = 0.6
+                r = 0.39
+                u = 0.1
+            case 2:
+                c = 0.45
+                r = 0.45
+                u = 0.1
+            case 3:
+                c = 0.35
+                r = 0.45
+                u = 0.2
+            case _:
+                c = 0.7
+                r = 0.3
+        for i in deck:
+            if i.rariry =="Common":
+                #weighted.append(deck[i])
+                weights.append(c)
+            if i.rarity == "Rare":
+                #weighted.append(deck[i])
+                weights.append(r)
+            if i.rarity == "Unique":
+                #weighted.append(deck[i])
+                weights.append(u)
+        return weights
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
@@ -1503,9 +1536,13 @@ class Rogues(commands.Cog):
             await caster.cRoom.channel.send(f"{caster.name} attempted to use a scroll directed at {victim.name}.")
             return False
     async def dungeon(self):
-        for i in players:
-            i.turnDone = False
-            i.movement = True
+        for x in floor:
+            for y in x.guests:
+                if isinstance(y,Enemy):
+                    y.turn()
+        for z in players:
+            z.turnDone = False
+            z.movement = True
         
     async def newFloor(self):
         for i in category.text_channels:
@@ -1570,7 +1607,8 @@ class Scroll: #This will all be internal. No player interaction to create scroll
     effect = ""
     image = ""
     owner = None
-    def __init__(self,name,stype,counter,block,avoid,copy,count,flavor,effect,image,aim=False,aim2=False):
+    rarity = ""
+    def __init__(self,name,stype,counter,block,avoid,copy,count,flavor,effect,image,rank,aim=False,aim2=False):
         self.name = name
         self.type = stype
         self.counter = counter
@@ -1584,6 +1622,15 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         self.effect = effect
         self.image = image
         self.owner = None
+        match rank:
+            case 1:
+                self.rarity =  "Common"
+            case 1:
+                self.rarity =  "Rare"
+            case 1:
+                self.rarity =  "Unique"
+            case _:
+                self.rarity =  ""
         if name == "Wish":
             wCount = 0
     def toPrint(self):
@@ -1879,8 +1926,86 @@ class Scroll: #This will all be internal. No player interaction to create scroll
             await interaction.send("Your scroll was not used. If you try again. Be better.",ephemeral=True)
 
 class Enemy:
-    hp = 3
-
+    hp = 1 # MAYBE scale with difficulty
+    atk = 1 # scale this with difficulty
+    loot = set()
+    room = None
+    evil = True
+    def __init__(self,diff,room):
+        self.hp = self.hp * diff
+        self.atk = self.atk * diff
+        self.room = room
+    async def turn(self,interaction:nextcord.Interaction):
+        targets = []
+        for i in self.room.guesets:
+            if i.evil == False:
+                targets.append(i)
+        victim = random.choice(targets)
+        # Need to think out attacking enemies and vice versa
+        # Add a whole new branch to react check for enemies
+    def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
+        enough = False # I want to put a cap on how much GOOD stuff the loot table can have.
+        count = 0
+        w = Rogues.deckWeight()
+        match difficulty:
+            case 1: # very small chance for unique. slightly higher for rare
+                while len(self.loot)<4: # limit 1 unique and at most 2 rare. Should always be at least 1 common
+                    l = random.choices(deck,w,k=1)
+                    if count == 3:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case 2: # better rates
+                while len(self.loot)<5: # limit 2 unique and at most 2 rare. Should always be at least 1 common
+                    l = random.choices(deck,w,k=1)
+                    if count == 2:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case 3: # decent chance for unique and rare
+                while len(self.loot)<7: # limit 3 unique and at most 4 rare. May not have any common.
+                    l = random.choices(deck,w,k=1)
+                    if count == 4:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case _: # no unique available
+                while len(self.loot)<3:
+                    l = random.choices(deck,w,k=1)
+                    if count == 2:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+        for i in self.loot:
+            deck.remove(i)
     
 # list of rooms I can randomize and then in second half I add the exit room to the list
 
@@ -1890,7 +2015,6 @@ async def setup(bot):
 
 '''2/13/26 Note: Move/remove the next room check when moving rooms so that the player can still go to previous rooms.
                  Find out why Map is looping but not responding to the interaction.'''
-
 
 # Notes:
 # Spells that still need to be implemented FULLY: Polymorph, Soul Knot, Wish, Za Warudo. Also Steal and Blood Altar
