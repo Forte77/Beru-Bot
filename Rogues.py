@@ -628,6 +628,9 @@ class Rogues(commands.Cog):
         await interaction.response.send_message(f"{caster.name} has ended their turn")
         caster.turnDone = True
         if caster.dCount>0: caster.dCount-=1
+        for i in players:
+            if i.turnDone == True:
+                await Rogues.dungeon()
     @player.subcommand(description="Display your stats")
     async def stats(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
@@ -700,7 +703,7 @@ class Rogues(commands.Cog):
                 if caster.cRoom.cleared == False:
                     print("not cleared yet M")
                     await interaction.response.send_message("You must deal with the monster in the room first.")
-                    return
+                    #return
             if caster.cRoom.roomType == "Loot":
                 print("leaving loot room")
                 await caster.mem.send("You are leaving the loot behind. It may not be here when/if you return.")
@@ -718,9 +721,11 @@ class Rogues(commands.Cog):
             await interaction.response.send_message(embed=MyEmbed,view=moving)
     @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
     async def delve(self,interaction:nextcord.Interaction):
+        # it removed all the channels except saferoom(including VC)
         caster = self.identify(interaction.user)
         vote = 0
-        caster.delve = True
+        if caster.cRoom.exit == True:
+            caster.delve = True
         for i in players:
             if i.delve:
                 vote+=1
@@ -1536,14 +1541,14 @@ class Rogues(commands.Cog):
             await caster.cRoom.channel.send(f"{caster.name} attempted to use a scroll directed at {victim.name}.")
             return False
     async def dungeon(self):
-        for x in floor:
+        '''for x in floor:
             for y in x.guests:
                 if isinstance(y,Enemy):
-                    y.turn()
+                    y.turn()'''
+        print("dungeon turn")
         for z in players:
             z.turnDone = False
-            z.movement = True
-        
+            z.movement = True    
     async def newFloor(self):
         for i in category.text_channels:
             if i.name =="saferoom":
@@ -1591,6 +1596,11 @@ class Rogues(commands.Cog):
             await Rogues.overwrite(Rogues,safeRoom,i,False,safeVC)
             i.map.append(safe)
             i.nRoom = safe.next
+        for i in floor:
+            if i == safe:
+                pass
+            else:
+                del i
         floornum+=1
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     name = ""
