@@ -147,12 +147,19 @@ class Room:
         for i in self.guests:
             guestlist += f"{i.name}----"
         return guestlist
-    def getNext(self):
-        return self.next
-    def setNext(self,rooms):
-        self.next=rooms
-    def setPrev(self,rooms):
-        self.prev=rooms
+    def connect(self,r=None,rooms:list=None,e=None):
+        if rooms != None:
+            for i in rooms:
+                self.next.append(i)
+                i.prev.append(self)
+                rooms.remove(i)
+        elif exit != None:
+            self.next.append(e)
+        elif r != None:
+            self.next.append(r)
+            r.prev.append(self)
+        else:
+            print("Something went wrong connecting rooms.")
     async def event(self,user:Player=None):
         match (self.roomType):
             case "Safe":
@@ -172,17 +179,19 @@ class Room:
                     await self.channel.send("Welcome back to The Saferoom")
             case "Loot":
                 print(f"{self.roomType} event")# Event for rooms with a chest in them
-                await self.channel.send(f"{user.name} has chosen to open the treasure chest. Everyone in the room will now be rewarded.")
+                await self.channel.send("Someone has chosen to open the treasure chest. Everyone in the room will now be rewarded.") # Talk to chafe about ratting out who opens it.
                 for i in self.guests:
                     await Rogues.deal(Rogues,i,True)
-                    if len(self.guests)==1:
+                    if len(self.guests)==1: # If someone opens the chest ONLY for themselves
                         i.greed +=1
+                        await i.mem.send(f"You have *selfishly* opened the treasure chest.")
                     await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon and grabbed some treasure for themselves.")
             case "Monster":
-                print(f"{self.roomType} event")# Event for rooms with an enemy in them
+                print(f"{self.roomType} event") # Event for rooms with an enemy in them
                 await self.channel.send("There is a monster in this room.\n*But I haven't implemented that yet soooooo uhhhh You're allowed to just move on.*\n*You can move again now*")
                 for i in self.guests:
                     i.movement = True
+                    print(f"{i.name} can move? {i.movement}")
                 # Plan to make a whole battle view with buttons that will essentially mirror casting/reacting this will also manage the enemy turn.
             case "Exit":
                 print(f"{self.roomType} event")# Event for the Exit Rooms
@@ -193,12 +202,12 @@ class Room:
                         i.nRoom = self
             case "Magic":
                 print(f"{self.roomType} event")# Event for the Exit Rooms in the beginning
-                await self.channel.send("You have reached the end of the floor. Please wait for the other")
+                await self.channel.send("You have reached the end of the floor. Once others arrive you can use the delve command to move on.")
             case "Evil": #I was originally thinking of having opening the chest be optional but I think I'll keep track of who has gotten the most "loot" and they will be the greediest player and I will frame it as them opening the chest.
                 print(f"{self.roomType} event")# Event for THE room. Implement later
-                await self.channel.send("The party arrives at an empty room with nothing but a singular chest inside. ")
+                await self.channel.send("The party arrives at an empty room with nothing but a singular chest inside...")
             case _:
-                print("Something went wrong running the events for a room.")
+                print(f"Something went wrong running the events for a room.\n{self.roomType}")
                 await self.channel.send("This is not a special room? something went wrong.")
 class Rogues(commands.Cog):
     def __init__(self,bot):
@@ -347,7 +356,7 @@ class Rogues(commands.Cog):
     def serialize(self,scroll,sn):
         scroll.serial = sn
     async def deal(self, player,loot=False):
-        if loot:
+        if loot: # For now Treasure chests are "True Random" as opposed to the weighted random from enemies.
             dealt = random.choice(deck)
             deck.remove(dealt)
             await player.addScroll(dealt)
@@ -628,9 +637,14 @@ class Rogues(commands.Cog):
         await interaction.response.send_message(f"{caster.name} has ended their turn")
         caster.turnDone = True
         if caster.dCount>0: caster.dCount-=1
+        count = 0
         for i in players:
             if i.turnDone == True:
-                await Rogues.dungeon()
+                count = count + 1
+        if count == len(players):
+            await Rogues.dungeon(Rogues,interaction)
+        else:
+            await interaction.send("Please wait until the rest of your party has ended their turn.",ephemeral=True)
     @player.subcommand(description="Display your stats")
     async def stats(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
@@ -700,9 +714,9 @@ class Rogues(commands.Cog):
         if caster.nRoom != []:
             if caster.cRoom.roomType == "Monster":
                 print("monster room")
-                if caster.cRoom.cleared == False:
-                    print("not cleared yet M")
-                    await interaction.response.send_message("You must deal with the monster in the room first.")
+                #if caster.cRoom.cleared == False:
+                #    print("not cleared yet M")
+                #    await interaction.response.send_message("You must deal with the monster in the room first.")
                     #return
             if caster.cRoom.roomType == "Loot":
                 print("leaving loot room")
@@ -720,20 +734,32 @@ class Rogues(commands.Cog):
             moving = Rogues.mView(interaction,caster,prev=True)
             await interaction.response.send_message(embed=MyEmbed,view=moving)
     @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
-    async def delve(self,interaction:nextcord.Interaction):
-        # it removed all the channels except saferoom(including VC)
+    async def delve(self,interaction:nextcord.Interaction): # Talk to chafe about tackling delving when not everyone is in the exit
         caster = self.identify(interaction.user)
         vote = 0
         if caster.cRoom.exit == True:
+            msg = "Player Votes:\n"
+            await interaction.response.send_message(content=msg,ephemeral=True)
             caster.delve = True
-        for i in players:
-            if i.delve:
-                vote+=1
-            if i.cRoom.exit == False:
-                await interaction.response.send_message("Not all players are in the exit room. Please wait.")
-                #implement group drag here.
-        if vote >= len(players)/2:
-            await self.newFloor()
+            for i in players:
+                if i.cRoom.exit and i.delve:
+                    msg = msg + f"{i.name} voted to delve deeper.\n"
+                    await interaction.edit(msg)
+                    #implement group drag here.
+                else:
+                    msg = msg + f"{i.name} did **NOT** vote to delve deeper.\n"
+                    await interaction.edit(msg)
+                    '''if i.delve: # count the vote of players that want to move on
+                        vote+=1
+                    else: # players who didn't vote to move on
+                        await interaction.send("Not all players are in the exit room. Please wait.")'''
+            if vote >= len(players)/2:
+                await self.newFloor()
+            else:
+                msg = msg + "NOT ENOUGH VOTES TO CONTINUE\nWait until more of your party members are here and ready to move on."
+                await interaction.edit(msg)
+        else:
+            await interaction.response.send_message("You must be in an \"Exit\" room in order to vote to delve further into the dungeon.")
     @player.subcommand(name="loot",description="This command can only be used in Loot type rooms.")
     async def loot(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
@@ -1540,18 +1566,18 @@ class Rogues(commands.Cog):
         else:
             await caster.cRoom.channel.send(f"{caster.name} attempted to use a scroll directed at {victim.name}.")
             return False
-    async def dungeon(self):
-        '''for x in floor:
+    async def dungeon(self,interaction:nextcord.Interaction):
+        print("dungeon turn")
+        for x in floor:
             for y in x.guests:
                 if isinstance(y,Enemy):
-                    y.turn()'''
-        print("dungeon turn")
+                    y.turn(interaction=interaction)
         for z in players:
             z.turnDone = False
             z.movement = True    
     async def newFloor(self):
         for i in category.text_channels:
-            if i.name =="saferoom":
+            if i.name =="saferoom" or i == safeVC:
                 continue
             else: #delete all rooms each floor or save them for post game review?
                 await i.delete()
@@ -1564,13 +1590,43 @@ class Rogues(commands.Cog):
             case 0:
                 match floornum:
                     case 1:
-                        #bp for first floor
+                        #bp for first newfloor
                         print(floornum)
+                        roomA = await self.createRoom()
+                        roomB = await self.createRoom()
+                        roomC = await self.createRoom()
+                        roomD = await self.createRoom()
+                        roomE = await self.createRoom()
+                        roomF = await self.createRoom(exit=True)
+                        safe.connect(rooms=[roomA,roomB,roomC])
+                        roomA.connect(r=roomD)
+                        roomB.connect(r=roomD)
+                        roomC.connect(r=roomE)
+                        roomD.connect(rooms=[roomE,roomF])
+                        roomE.connect(rooms=[roomD,roomF])
                     case 2:
-                        #bp for second floor
+                        #bp for second newfloor
                         print(floornum)
+                        roomA = await self.createRoom()
+                        roomB = await self.createRoom()
+                        roomC = await self.createRoom()
+                        roomD = await self.createRoom()
+                        roomE = await self.createRoom()
+                        roomF = await self.createRoom()
+                        roomG = await self.createRoom()
+                        roomH = await self.createRoom()
+                        roomI = await self.createRoom(exit=True)
+                        safe.connect(rooms=[roomA,roomB,roomC])
+                        roomA.connect(r=roomD)
+                        roomB.connect(rooms=[roomD,roomE])
+                        roomC.connect(r=roomF)
+                        roomD.connect(r=roomG)
+                        roomE.connect(r=roomH)
+                        roomF.connect(r=roomH)
+                        roomG.connect(r=roomI)
+                        roomH.connect(r=roomI)
                     case 3:
-                        #bp for last floor before evil
+                        #The special floor before the twist. Come back to this for how to create the room
                         print(floornum)
                     case _:
                         print("something went wrong")
@@ -1935,7 +1991,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         else:
             await interaction.send("Your scroll was not used. If you try again. Be better.",ephemeral=True)
 
-class Enemy:
+class Enemy: #edit death function to include what happens with enemies
     hp = 1 # MAYBE scale with difficulty
     atk = 1 # scale this with difficulty
     loot = set()
@@ -1945,12 +2001,15 @@ class Enemy:
         self.hp = self.hp * diff
         self.atk = self.atk * diff
         self.room = room
-    async def turn(self,interaction:nextcord.Interaction):
+    async def turn(self,interaction:nextcord.Interaction=None):
         targets = []
         for i in self.room.guesets:
             if i.evil == False:
                 targets.append(i)
         victim = random.choice(targets)
+        await self.room.channel.send("The Goblin attacks a random person in the room.")
+        await Rogues.reactCheck()
+        # Make a new type of react check function that potentially doesn't need an interaction.
         # Need to think out attacking enemies and vice versa
         # Add a whole new branch to react check for enemies
     def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
