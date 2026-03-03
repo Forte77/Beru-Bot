@@ -82,7 +82,7 @@ class Misc(commands.Cog):
         coding = ["Lua","nextcord Bot"]
         work = random.choice(task)
         if work == "Sprites":
-            await ctx.send("Your chosen task is: " + work +"\nGet back on that grind and finish the BN3 pack.")
+            await ctx.send("Your chosen task is: " + work +"\nGet back on that grind and start the BN4 pack.")
         elif work == "Coding":
             await ctx.send("Your chosen task is: " + work)
             work1 = random.choice(coding)
