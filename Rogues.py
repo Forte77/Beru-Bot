@@ -88,12 +88,52 @@ class Player:
         self.bID = player.id
         print(self.bID)
         print("player created")
-    def setRooms(self):
-        self.nRoom = self.cRoom.next
+    async def stats(self,interaction:nextcord.Interaction):
+        self.hpDis = ""
+        self.shieldDis = "None"
+        self.handDis = ""
+        i=0
+        while i < self.hp:
+            self.hpDis = self.hpDis + ":heart:"
+            i+=1
+        i=0
+        if self.shield ==0: self.shieldDis = "None" 
+        else: self.shieldDis = ""
+        while i < self.shield:
+            self.shieldDis = self.shieldDis + ":shield:"
+            i+=1
+        self.handDis = ""
+        if len(self.hand)==0: 
+            self.handDis = "You have no scrolls. I'm surprised that you're even still alive."
+        i=0
+        while i < len(self.hand):
+            if len(self.hand)==1:
+                self.handDis = f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n"
+            elif i == len(self.hand):
+                break
+            elif i == len(self.hand)-1:
+                self.handDis = self.handDis + f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n-# You can use the view command to inspect your scrolls"
+            else:
+                self.handDis = self.handDis + f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n"
+            i+=1
+        MyEmbed = nextcord.Embed(title = self.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
+        MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
+        MyEmbed.add_field(name="HP:heart:", value=self.hpDis,inline=True)
+        MyEmbed.add_field(name="Shields:shield:", value=self.shieldDis,inline=True)
+        MyEmbed.add_field(name="PlayerID",value=self.uid,inline=True)
+        if self.Rogue:
+            MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
+        if self.dCount>0:
+            MyEmbed.add_field(name="Invis?",value=f"{self.dCount} turn(s)",inline=True)
+        if self.soul != "":
+            MyEmbed.add_field(name="Soulmate?", value=self.soul,inline=True)
+        MyEmbed.add_field(name="Current room",value=self.cRoom.name,inline=True)
+        MyEmbed.add_field(name="Owned Scrolls",value=self.handDis,inline=False)
+        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
     async def addScroll(self,scroll,interaction:nextcord.Interaction=None,gifter=None):
         if len(self.hand)<5:
             self.hand.append(scroll)
-            scroll.owner = self.name
+            scroll.owner = self
             print(f"{scroll.name} added to {self.name}'s hand")
         elif len(self.hand)==5:
             msg = await self.mem.send("You have the full amount of scrolls. You will need to decide what to do with the extra you have just received.")
@@ -648,47 +688,7 @@ class Rogues(commands.Cog):
     @player.subcommand(description="Display your stats")
     async def stats(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
-        caster.hpDis = ""
-        caster.shieldDis = "None"
-        caster.handDis = ""
-        i=0
-        while i < caster.hp:
-            caster.hpDis = caster.hpDis + ":heart:"
-            i+=1
-        i=0
-        if caster.shield ==0: caster.shieldDis = "None" 
-        else: caster.shieldDis = ""
-        while i < caster.shield:
-            caster.shieldDis = caster.shieldDis + ":shield:"
-            i+=1
-        caster.handDis = ""
-        if len(caster.hand)==0: 
-            caster.handDis = "You have no scrolls. I'm surprised that you're even still alive."
-        i=0
-        while i < len(caster.hand):
-            if len(caster.hand)==1:
-                caster.handDis = f"{i+1}. **{caster.hand[i].name}** a(n) __{caster.hand[i].type}__ type of spell\n"
-            elif i == len(caster.hand):
-                break
-            elif i == len(caster.hand)-1:
-                caster.handDis = caster.handDis + f"{i+1}. **{caster.hand[i].name}** a(n) __{caster.hand[i].type}__ type of spell\n-# You can use the view command to inspect your scrolls"
-            else:
-                caster.handDis = caster.handDis + f"{i+1}. **{caster.hand[i].name}** a(n) __{caster.hand[i].type}__ type of spell\n"
-            i+=1
-        MyEmbed = nextcord.Embed(title = caster.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
-        MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
-        MyEmbed.add_field(name="HP:heart:", value=caster.hpDis,inline=True)
-        MyEmbed.add_field(name="Shields:shield:", value=caster.shieldDis,inline=True)
-        MyEmbed.add_field(name="PlayerID",value=caster.uid,inline=True)
-        if caster.Rogue:
-            MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
-        if caster.dCount>0:
-            MyEmbed.add_field(name="Invis?",value=f"{caster.dCount} turn(s)",inline=True)
-        if caster.soul != "":
-            MyEmbed.add_field(name="Soulmate?", value=caster.soul,inline=True)
-        MyEmbed.add_field(name="Current room",value=caster.cRoom.name,inline=True)
-        MyEmbed.add_field(name="Owned Scrolls",value=caster.handDis,inline=False)
-        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
+        await caster.stats()
     @player.subcommand(description="Duel another player")
     async def duel(self,interaction:nextcord.Interaction,target:nextcord.Member):
         caster = self.identify(interaction.user)
@@ -714,9 +714,9 @@ class Rogues(commands.Cog):
         if caster.nRoom != []:
             if caster.cRoom.roomType == "Monster":
                 print("monster room")
-                #if caster.cRoom.cleared == False:
-                #    print("not cleared yet M")
-                #    await interaction.response.send_message("You must deal with the monster in the room first.")
+                if caster.cRoom.cleared == False:
+                    print("not cleared yet M")
+                    await interaction.send("You must deal with the monster in the room first.")
                     #return
             if caster.cRoom.roomType == "Loot":
                 print("leaving loot room")
@@ -1254,7 +1254,7 @@ class Rogues(commands.Cog):
                     await self.view.oginter.edit_original_message(view=self.view)
                     self.view.stop()
             except Exception as e:
-                print(f"1173 React Button Callback. An error occured: {e}")
+                print(f"1257 React Button Callback. An error occured: {e}")
                 for i in self.view.children:
                     i.disabled = True
                 await self.view.oginter.edit_original_message(view=self.view)
@@ -1371,7 +1371,7 @@ class Rogues(commands.Cog):
                         await self.view.oginter.edit_original_message(embed=self.embed,view=self.view)
                         self.view.stop()
                 except Exception as e:
-                    print(f"1283 Aim button callback. An error occured: {e}")
+                    print(f"1374 Aim button callback. An error occured: {e}")
                     for i in self.view.children:
                         i.disabled = True
                     await self.view.oginter.edit_original_message(view=self.view)
@@ -1548,7 +1548,7 @@ class Rogues(commands.Cog):
         MyEmbed.add_field(name="Blockable?",value=scroll.block,inline=True)
         MyEmbed.add_field(name="Avoidable?",value=scroll.avoid,inline=True)
         MyEmbed.add_field(name="Effect:",value=scroll.effect,inline=False)
-        MyEmbed.add_field(name="Owner",value=f"**{scroll.owner}**",inline=True)
+        MyEmbed.add_field(name="Owner",value=f"**{scroll.owner.name}**",inline=True)
         MyEmbed.add_field(name="Serial",value=f"#{scroll.copy}",inline=True)
         MyEmbed.add_field(name="",value=f"*{scroll.flavor}*",inline=False)
         if scry:
@@ -1571,7 +1571,8 @@ class Rogues(commands.Cog):
         for x in floor:
             for y in x.guests:
                 if isinstance(y,Enemy):
-                    y.turn(interaction=interaction)
+                    y.action(interaction=interaction)
+        print("All enemies have done their actions")
         for z in players:
             z.turnDone = False
             z.movement = True    
@@ -1991,19 +1992,26 @@ class Scroll: #This will all be internal. No player interaction to create scroll
         else:
             await interaction.send("Your scroll was not used. If you try again. Be better.",ephemeral=True)
 
-class Enemy: #edit death function to include what happens with enemies
+class Enemy: #edit damage function to include what happens with enemies
     hp = 1 # MAYBE scale with difficulty
     atk = 1 # scale this with difficulty
     loot = set()
     room = None
     evil = True
-    def __init__(self,diff,room):
-        self.hp = self.hp * diff
-        self.atk = self.atk * diff
+    look = ""
+    name = "Goblin"
+    def __init__(self,room,look,name=None,):
         self.room = room
-    async def turn(self,interaction:nextcord.Interaction=None):
+        if name == "Goblina":
+            self.hp = 1
+            self.atk = 0
+        else:
+            self.hp = self.hp * difficulty
+            self.atk = self.atk * difficulty
+        self.lootTable()
+    async def action(self,interaction:nextcord.Interaction=None):# function for the enemy turn
         targets = []
-        for i in self.room.guesets:
+        for i in self.room.guests:
             if i.evil == False:
                 targets.append(i)
         victim = random.choice(targets)
@@ -2012,7 +2020,64 @@ class Enemy: #edit death function to include what happens with enemies
         # Make a new type of react check function that potentially doesn't need an interaction.
         # Need to think out attacking enemies and vice versa
         # Add a whole new branch to react check for enemies
+    async def stats(self,scry:bool=False,divine:bool=False):
+        hpDis = ""
+        shieldDis = "None"
+        lootDis = ""
+        i=0
+        while i < self.hp:
+            self.hpDis = self.hpDis + ":heart:"
+            i+=1
+        i=0
+        if self.shield ==0: self.shieldDis = "None" 
+        else: self.shieldDis = ""
+        while i < self.shield:
+            self.shieldDis = self.shieldDis + ":shield:"
+            i+=1
+        MyEmbed = nextcord.Embed(title = self.name, description = "A Goblin has appeared",color = nextcord.Colour.green)
+        #MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
+        MyEmbed.add_field(name="HP:heart:", value=hpDis,inline=True)
+        MyEmbed.add_field(name="Shields:shield:", value=shieldDis,inline=True)
+        if divine == True:
+            lootDis = "A "
+            rarity = set()
+            for x in self.loot:
+                temp = ""
+                match(x.rarity):
+                    case 1:
+                        temp = "**Common**"
+                    case 2:
+                        temp = "**Rare**"
+                    case 3:
+                        temp = "**Unique**"
+                    case _:
+                        print(f"Something went wrong when getting {x.name}")
+                lootDis = lootDis + x.name + " scroll. " + temp + " rarity.\n"
+            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
+            await self.room.channel.send(embed=MyEmbed)
+        elif scry == True:
+            lootDis = "Scrolls of "
+            rarity = set()
+            for r in self.loot:
+                match(r.rarity):
+                    case 1:
+                        rarity.add("**Common**")
+                    case 2:
+                        rarity.add("**Rare**")
+                    case 3:
+                        rarity.add("**Unique**")
+                    case _:
+                        print(f"Something went wrong when getting {r.name} rarity")
+            for x in rarity:
+                lootDis = lootDis + x + " rarity\nScrolls of "
+            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
+            await self.room.channel.send(embed=MyEmbed)
+        else:
+            await self.room.channel.send(embed=MyEmbed)
+    async def death(self):
+        pass
     def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
+        print("starting to create loot table.")
         enough = False # I want to put a cap on how much GOOD stuff the loot table can have.
         count = 0
         w = Rogues.deckWeight()
@@ -2075,6 +2140,7 @@ class Enemy: #edit death function to include what happens with enemies
                         self.loot.add(l)
         for i in self.loot:
             deck.remove(i)
+        return self.loot
     
 # list of rooms I can randomize and then in second half I add the exit room to the list
 
