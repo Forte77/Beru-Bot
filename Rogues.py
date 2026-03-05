@@ -688,7 +688,7 @@ class Rogues(commands.Cog):
     @player.subcommand(description="Display your stats")
     async def stats(self,interaction:nextcord.Interaction):
         caster = self.identify(interaction.user)
-        await caster.stats()
+        await caster.stats(interaction)
     @player.subcommand(description="Duel another player")
     async def duel(self,interaction:nextcord.Interaction,target:nextcord.Member):
         caster = self.identify(interaction.user)
@@ -1789,7 +1789,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     await interaction.send(f"Is there a {victim.name} in the room with us right now?\n-# The answer is no. You can't attack someone who isn't here. You aren't God",ephemeral=True)
             case "call lightning": # target two entities or one entity twice
                 if await Rogues.roommate(Rogues,caster,victim) and await Rogues.roommate(Rogues,caster,v2):
-                    print(f"{interaction.user} casted {self.name}")
+                    print(f"{interaction.user} casted {self.name}") # It's casting before saving second target
                     tried = False
                     if target2!=None:
                         print("two people")
