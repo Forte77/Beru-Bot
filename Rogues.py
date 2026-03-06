@@ -228,10 +228,11 @@ class Room:
                     await self.channel.send(f"{i.name} has been gifted a scroll by the dungeon and grabbed some treasure for themselves.")
             case "Monster":
                 print(f"{self.roomType} event") # Event for rooms with an enemy in them
-                await self.channel.send("There is a monster in this room.\n*But I haven't implemented that yet soooooo uhhhh You're allowed to just move on.*\n*You can move again now*")
-                for i in self.guests:
-                    i.movement = True
-                    print(f"{i.name} can move? {i.movement}")
+                await self.channel.send("There is a monster in this room.")#\n*But I haven't implemented that yet soooooo uhhhh You're allowed to just move on.*\n*You can move again now*")
+                await Rogues.spawn()
+                #for i in self.guests:
+                #    i.movement = True
+                #    print(f"{i.name} can move? {i.movement}")
                 # Plan to make a whole battle view with buttons that will essentially mirror casting/reacting this will also manage the enemy turn.
             case "Exit":
                 print(f"{self.roomType} event")# Event for the Exit Rooms
@@ -391,7 +392,7 @@ class Rogues(commands.Cog):
         i = 0
         global deck
         while (i < count):
-            deck.append(Scroll(name,type,counter,block,avoid,i+1,count,flavor,effect,image,aim,aim2)) # Create Scroll and add it to the deck
+            deck.append(Scroll(name,type,counter,block,avoid,i+1,count,flavor,effect,image,rank,aim,aim2)) # Create Scroll and add it to the deck
             i+=1
     def serialize(self,scroll,sn):
         scroll.serial = sn
@@ -1169,14 +1170,14 @@ class Rogues(commands.Cog):
                             else:
                                 MyEmbed.add_field(name=f"Player {i.uid}",value=i.name,inline=True)
                         print(f"Spell: {spell.name}")                    
-                        aim = Rogues.Aiming(interaction,scroll=spell,caster=self.caster,embed=MyEmbed)
-                        await interaction.send(embed=MyEmbed,view=aim,ephemeral=True)
+                        aim = Rogues.Aiming(self.view.oginter,scroll=spell,caster=self.caster,embed=MyEmbed)
+                        await self.view.oginter.edit_original_message(embed=MyEmbed,view=aim,ephemeral=True)
                     else:
                         print("i'm dumb")
                         await self.caster.use(interaction,spell)
                 elif self.full:
                     if self.give:
-                        print("960")
+                        print("1180")
                         if spell in self.caster.hand:
                             self.caster.hand.remove(spell)
                             await self.caster.addScroll(self.view.extra)
@@ -1348,7 +1349,7 @@ class Rogues(commands.Cog):
                         self.view.setT(target=self.label)
                         print("saving target 1?")
                         return
-                    elif self.scroll.aim2 and self.view.aimCheck:
+                    elif self.scroll.aim2 and self.view.aimCheck():
                         self.t1 = self.view.getT()
                         print(self.t1.name)
                         if self.label == "Same person":
@@ -1389,7 +1390,7 @@ class Rogues(commands.Cog):
             if full:
                 for i in players:
                     if i.name == self.caster.name:
-                        print("same same")
+                        print("same samef")
                     else:
                         bID = f"{self.caster.bID}"
                         self.caster.bID += 1
@@ -1700,8 +1701,10 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 self.rarity =  ""
         if name == "Wish":
             wCount = 0
+        elif name == "Call Lightning":
+            self.toPrint()
     def toPrint(self):
-        print(f"{self.name}. Type: {self.type}. Serial Number: {self.copy}. There are {self.count} total in the dungeon.")
+        print(f"{self.name}. Type: {self.type}. Serial Number: {self.copy}. There are {self.count} total in the dungeon. Aim Values are {self.aim} and {self.aim2}")
     async def action(self,interaction:nextcord.Interaction,target=None,target2=None,same:bool=False):
         caster = Rogues.identify(Rogues,interaction.user)# Can set all these up outside each individual action.
         if target!=None:
