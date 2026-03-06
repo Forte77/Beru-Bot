@@ -1701,8 +1701,6 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 self.rarity =  ""
         if name == "Wish":
             wCount = 0
-        elif name == "Call Lightning":
-            self.toPrint()
     def toPrint(self):
         print(f"{self.name}. Type: {self.type}. Serial Number: {self.copy}. There are {self.count} total in the dungeon. Aim Values are {self.aim} and {self.aim2}")
     async def action(self,interaction:nextcord.Interaction,target=None,target2=None,same:bool=False):
@@ -1949,7 +1947,7 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                     print(self.name)
                     await interaction.send(f"The {self.name} scroll can only be used in reaction to another spell.",ephemeral=True)
                     return
-            #Maybe done with explosion
+            # Maybe done with explosion
             case "explosion": # 3 damage to everyone else in the room...MAYBE some damage to the user 
                 print(f"{interaction.user} casted {self.name}")
                 if len(caster.cRoom.guests)>1:
@@ -2032,7 +2030,7 @@ class Enemy: #edit damage function to include what happens with enemies
             self.hpDis = self.hpDis + ":heart:"
             i+=1
         i=0
-        if self.shield ==0: self.shieldDis = "None" 
+        if self.shield ==0: self.shieldDis = "None"
         else: self.shieldDis = ""
         while i < self.shield:
             self.shieldDis = self.shieldDis + ":shield:"
