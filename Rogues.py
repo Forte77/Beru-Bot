@@ -491,6 +491,26 @@ class Rogues(commands.Cog):
                 #weighted.append(deck[i])
                 weights.append(u)
         return weights
+    def spawn(self,room): # Spawn Enemy
+        match difficulty:
+            case 1:
+                gobPics = tuple("Goblina","Gobshi","Gobuta","Rigurd","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png","Beru-Bot/Resources/gobuta.png","Beru-Bot/Resources/gobRigurd.png")
+                weights = [0.1,0.3,0.4,0.2]
+                look = random.choices(gobPics[4:7],weights,k=1)
+                name = gobPics.index(look) - 4
+                Enemy(room,look,gobPics[name])
+            case 2:
+                #gobPics = ["Goblina",,"Beru-Bot/Resources/goblina.png"]
+                print("Haven't thought out which enemies for difficulty 2")
+            case 3:
+                #gobPics = ["Goblina",,"Beru-Bot/Resources/"goblina.png"]
+                print("Haven't thought out which enemies for difficulty 3")
+            case _:
+                gobPics = ["Goblina","Gobshi","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png"]
+                weights = [0.1,0.9]
+                look = random.choices(gobPics[2:3],weights,k=1)
+                name = gobPics.index(look) - 2
+                Enemy(room,look,gobPics[name])
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
@@ -2001,8 +2021,10 @@ class Enemy: #edit damage function to include what happens with enemies
     evil = True
     look = ""
     name = "Goblin"
-    def __init__(self,room,look,name=None,):
+    def __init__(self,room,look,name=None):
         self.room = room
+        self.look = look
+        self.name = name
         if name == "Goblina":
             self.hp = 1
             self.atk = 0
@@ -2017,7 +2039,7 @@ class Enemy: #edit damage function to include what happens with enemies
                 targets.append(i)
         victim = random.choice(targets)
         await self.room.channel.send("The Goblin attacks a random person in the room.")
-        await Rogues.reactCheck()
+        # await Rogues.gReact()
         # Make a new type of react check function that potentially doesn't need an interaction.
         # Need to think out attacking enemies and vice versa
         # Add a whole new branch to react check for enemies
