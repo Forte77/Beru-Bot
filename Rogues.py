@@ -494,23 +494,23 @@ class Rogues(commands.Cog):
     def spawn(self,room): # Spawn Enemy
         match difficulty:
             case 1:
-                gobPics = tuple("Goblina","Gobshi","Gobuta","Rigurd","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png","Beru-Bot/Resources/gobuta.png","Beru-Bot/Resources/gobRigurd.png")
-                weights = [0.1,0.3,0.4,0.2]
-                look = random.choices(gobPics[4:7],weights,k=1)
-                name = gobPics.index(look) - 4
-                Enemy(room,look,gobPics[name])
+                goblins = tuple("Goblina","Gobshi","Gobuta","Rigurd","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png","Beru-Bot/Resources/gobuta.png","Beru-Bot/Resources/gobRigurd.png")
+                weights = [0.01,0.3,0.44,0.25]
+                look = random.choices(goblins[4:7],weights,k=1)
+                name = goblins.index(look) - 4
+                Enemy(room,look,goblins[name])
             case 2:
-                #gobPics = ["Goblina",,"Beru-Bot/Resources/goblina.png"]
+                #goblins = ["Goblina",,"Beru-Bot/Resources/goblina.png"]
                 print("Haven't thought out which enemies for difficulty 2")
             case 3:
-                #gobPics = ["Goblina",,"Beru-Bot/Resources/"goblina.png"]
+                #goblins = ["Goblina",,"Beru-Bot/Resources/"goblina.png"]
                 print("Haven't thought out which enemies for difficulty 3")
             case _:
-                gobPics = ["Goblina","Gobshi","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png"]
+                goblins = ["Goblina","Gobshi","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png"]
                 weights = [0.1,0.9]
-                look = random.choices(gobPics[2:3],weights,k=1)
-                name = gobPics.index(look) - 2
-                Enemy(room,look,gobPics[name])
+                look = random.choices(goblins[2:3],weights,k=1)
+                name = goblins.index(look) - 2
+                Enemy(room,look,goblins[name])
     @commands.command()
     @commands.check(is_me)
     async def reset(self,ctx,member:nextcord.Member):
