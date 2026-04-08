@@ -26,7 +26,7 @@ async def ping(ctx): #Commmands use context parameter. Shortened to ctx
     await ctx.send("Pong!")
 #Help/About command
 @bot.group(aliases = ["about"],invoke_without_command=True)
-async def help(ctx:commands.Context):
+async def help(ctx:commands.Contexhsrt):
         #Building the help command in an embed.
         MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour(0xFFD700))
         #settting the thumbnail for the embed to Zani

@@ -76,40 +76,54 @@ class Misc(commands.Cog):
     @commands.check(is_me)
     async def justdoit(self,ctx):
         await ctx.channel.purge(limit = 1)
-        task = ["Japanese","Coding","Sprites"]
+        task = ["Japanese","Coding","Sprites","Twitch stuff","Job stuff"]
         japanese = ["Short quiz","Long quiz","Umi Lesson","Umi review"]
         review = ["review","speak","listen","blitz"]
-        coding = ["Lua","nextcord Bot"]
+        coding = ["Lua","nextcord Bot","Hackerrank"]
         work = random.choice(task)
-        if work == "Sprites":
-            await ctx.send("Your chosen task is: " + work +"\nGet back on that grind and start the BN4 pack.")
-        elif work == "Coding":
-            await ctx.send("Your chosen task is: " + work)
-            work1 = random.choice(coding)
-            await ctx.send("https://www.udemy.com/home/my-courses/learning/")
-            if work1 == "Lua":
-                await ctx.send("Pick the Lua course back up. Almost done")
-            elif work1 == "nextcord Bot":
-                await ctx.send("Work on the game.")
-        elif work == "Japanese":
-            work2 = random.choice(japanese)
-            await ctx.send("Your chosen task is: " + work +" today!\n"+"Specifically doing a: "+work2)
-            if work2 == "Short quiz":
-                await ctx.send("Do some short quizzes\nhttps://kana-quiz.tofugu.com/ \nInvite Zach or Rizen. Alternate doing quizzes for Hiragana and Katakana.\nDo at LEAST 4 Quizzes total; so 2 Hiragana and 2 Katakana.")
-            elif work2 == "Long quiz":
-                await ctx.send("Do a couple long quizzes. 1 Hiragana and 1 Katakana\nhttps://realkana.com/hiragana \nCheck off all single,double(and extended for katakana) character boxes for each language and all fonts. Don't do any word packs unless you have a lot of free time.\n**Uncheck** __\"Continuous Play\"__ and __\"Repeat Problem Kana\"__")
-            elif work2 == "Umi Lesson":
-                await ctx.send("Do your next lesson in Umi.")
-            elif work2 == "Umi review":
-                work3 = random.choice(review)
-                if work3 == "review":
-                    await ctx.send("Go do the "+work3+" part of your Umi reviews")
-                elif work3 == "speak":
-                    await ctx.send("Go do the "+work3+" part of your Umi reviews")
-                elif work3 == "listen":
-                    await ctx.send("Go do the "+work3+" part of your Umi reviews")
-                elif work3 == "blitz":
-                    await ctx.send("Go do the "+work3+" part of your Umi reviews")
+        match(work):
+            case "Sprites":
+                await ctx.send("Your chosen task is: " + work +"\nGet back on that grind and start the BN4 pack.")
+            case "Coding":
+                await ctx.send("Your chosen task is: " + work)
+                work1 = random.choice(coding)
+                #await ctx.send("https://www.udemy.com/home/my-courses/learning/")
+                match (work1):
+                    case "Lua":
+                        await ctx.send("Pick the Lua course back up. Almost done")
+                    case "nextcord Bot":
+                        await ctx.send("Work on the game.")
+                    case "Hackerrank":
+                        await ctx.send("Do hackerrank things")
+                    case _:
+                        await ctx.send("Do "+ work1)
+            case "Japanese":
+                work2 = random.choice(japanese)
+                await ctx.send("Your chosen task is: " + work +" today!\n"+"Specifically doing a: "+work2)
+                match (work2):
+                    case "Short quiz":
+                        await ctx.send("Do some short quizzes\nhttps://kana-quiz.tofugu.com/ \nInvite Zach or Rizen. Alternate doing quizzes for Hiragana and Katakana.\nDo at LEAST 4 Quizzes total; so 2 Hiragana and 2 Katakana.")
+                    case "Long quiz":
+                        await ctx.send("Do a couple long quizzes. 1 Hiragana and 1 Katakana\nhttps://realkana.com/hiragana \nCheck off all single,double(and extended for katakana) character boxes for each language and all fonts. Don't do any word packs unless you have a lot of free time.\n**Uncheck** __\"Continuous Play\"__ and __\"Repeat Problem Kana\"__")
+                    case "Umi Lesson":
+                        await ctx.send("Do your next lesson in Umi.")
+                    case "Umi review":
+                        work3 = random.choice(review)
+                        match(work3):
+                            case "review":
+                               await ctx.send("Go do the "+work3+" part of your Umi reviews")
+                            case "speak":
+                                await ctx.send("Go do the "+work3+" part of your Umi reviews")
+                            case "listen":
+                                await ctx.send("Go do the "+work3+" part of your Umi reviews")
+                            case "blitz":
+                                await ctx.send("Go do the "+work3+" part of your Umi reviews")
+                            case _:
+                                await ctx.send("Do "+work3)
+                    case _:
+                        await ctx.send("Do "+work2)
+            case _:
+                await ctx.send("Do "+work)
     @justdoit.error
     async def errorhandler(self,ctx,error):
         if isinstance(error,commands.CheckFailure):
