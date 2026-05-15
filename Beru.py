@@ -27,11 +27,8 @@ async def ping(ctx): #Commmands use context parameter. Shortened to ctx
 #Help/About command
 @bot.group(aliases = ["about"],invoke_without_command=True)
 async def help(ctx:commands.Context):
-        #Building the help command in an embed.
         MyEmbed = nextcord.Embed(title = "Commands", description = "These are the available commands. For extra help with most commands use **?help [command name]**",color = nextcord.Colour(0xFFD700))
-        #settting the thumbnail for the embed to Zani
         MyEmbed.set_thumbnail(url="https://s3.getstickerpack.com/storage/uploads/sticker-pack/zani-day-at-work-and-abby/sticker_4.png?76f28757eea310fa122b44bc3d924cb7&d=200x200")
-        #You can add 'inline = False' to make them display Vertically
         MyEmbed.add_field(name = "?alarm", value = "This command sets an alarm for a given time(24h) for only one server member at a time.",inline = False)
         MyEmbed.add_field(name = "?battleship", value = "Start a game of battleship with another member. You can also choose the vertical and horizontal dimensions of the board. Ex: \n?battleship @friendo 5 5",inline = False)
         MyEmbed.add_field(name = "?choose4me", value = "This command will randomly select from a list of things. Activate the command and then put in the options one by one",inline = False)
@@ -40,7 +37,6 @@ async def help(ctx:commands.Context):
         MyEmbed.add_field(name = "?ping", value = "This command replies back with Pong when used",inline = False)
         MyEmbed.add_field(name = "?poll", value = "This command creates a poll for [x] amount of minutes with the tile and options given.",inline = False)
         MyEmbed.add_field(name = "?rps [choice]", value = "This command lets you play Rock Paper Scissors. It does not allow non-classical answers. You must type rock paper or scissors as a response.",inline = False)
-        #Send embed that was built.
         await ctx.send(embed=MyEmbed)
 @help.command(name="alarm",description="More help with the alarm command")
 async def alarm(ctx:commands.Context):

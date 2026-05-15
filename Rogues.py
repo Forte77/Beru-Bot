@@ -493,7 +493,7 @@ class Rogues(commands.Cog):
         return weights
     def spawn(self,room): # Spawn Enemy
         match difficulty:
-            case 1:
+            case 1: # tuple where the first half is goblin names and second half is picture path
                 goblins = tuple("Goblina","Gobshi","Gobuta","Rigurd","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png","Beru-Bot/Resources/gobuta.png","Beru-Bot/Resources/gobRigurd.png")
                 weights = [0.01,0.3,0.44,0.25]
                 look = random.choices(goblins[4:7],weights,k=1)

@@ -64,8 +64,8 @@ class Misc(commands.Cog):
     @commands.command()
     async def laugh(self,ctx):
         await ctx.channel.purge(limit = 1)
-        funnies = ["https://cdn.nextcordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
-        link = random.randint(1,2)
+        funnies = ["https://youtube.com/shorts/cWbJxU_NTsc?si=bCEEe-J_zCRJmafF","https://cdn.nextcordapp.com/attachments/681684835513008280/1433133633245286521/cf2fb2ea0e790e25ff1e936fd9c1dd93.mp4?ex=69039534&is=690243b4&hm=870f12d87f2d0564b411fc0df5db30335595455bc1b6ff714e2e3193de659135&","https://www.instagram.com/reel/DQJQzTPDvEx/?igsh=Ym11OTA2OWg0aTRl"]
+        link = random.randint(1,3)
         await ctx.channel.send(f"Here's something that might give you a laugh:\n"+funnies[link-1])
     @commands.command()
     async def shadow(self,ctx):# Stream redeem shadow did on 2.2.26
