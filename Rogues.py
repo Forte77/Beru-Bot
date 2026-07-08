@@ -11,63 +11,218 @@ from nextcord import Interaction
 from nextcord import application_command
 from nextcord.ext import application_checks
 from nextcord import ApplicationCommandOptionType
-with open("BotToken.txt",'r') as file:
+with open("BotToken.txt",'r') as file: # Obviously not going to have the Bot Token public
     lines = file.readlines() #added my id to the bottoken text
     token = lines[0]
     own = lines[1]
     own = int(own)
-#Coding commands not event. Command decorator calls a function. Event itself is a function
-async def is_me(arg):
+#Note: Coding commands not event. Command decorator calls a function. Event itself is a function
+async def is_me(arg): #Function to check for myself
         if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
             intauth = arg.user.id
             return intauth == own
         else:
             auth = arg.author.id
             return auth == own
-ready = True
-deck = []
-evil = False
-players = []
-deads = []
-bads = 0
-start = False
-vote = 0
-floor = []
-floornum = 1
+ready = True #Variable to see if a game can be starteed
+deck = [] #The entire deck of spells for the game
+evil = False #The check for the 2nd half of the game
+players = [] #List of all players
+deads = [] #List of dead players
+bads = 0 # Count of evil players
+vote = 0 # vote for moving to a new floor
+floor = [] # list of all the rooms in a floor
+floornum = 1 # which floor we're on
 # Need a function to check if there is a game running already
 async def ongoing(interaction:nextcord.Interaction):
     return ready == False
+class Enemy: #edit damage function to include what happens with enemies
+    hp = 1 # MAYBE scale with difficulty (additively)
+    atk = 1 # scale this with difficulty (multiplicatively)
+    loot = set() # set because it doesn't allow duplicates
+    room = None 
+    evil = True # adding this because I may in the future make something that only targets evil beings also because Goblina won't be evil.
+    look = ""
+    name = "Goblin"
+    def __init__(self,room,look,name=None):
+        self.room = room
+        self.look = look
+        self.name = name
+        if name == "Goblina":
+            self.hp = 1
+            self.atk = 0
+            self.evil = False
+        else:
+            self.hp = self.hp + difficulty
+            if (difficulty > 0):
+                self.atk = self.atk * difficulty
+            else:
+                self.atk = 1
+        self.lootTable() # calls the function to create the randomized loot table
+    async def action(self,interaction:nextcord.Interaction=None):# function for the enemy turn
+        targets = []
+        for i in self.room.guests:
+            if i.evil == False:
+                targets.append(i)
+        victim = random.choice(targets)
+        await self.room.channel.send("The Goblin attacks a random person in the room.")
+        # await Rogues.gReact()
+        # Make a new type of react check function that potentially doesn't need an interaction.
+        # Need to think out attacking enemies and vice versa
+        # Add a whole new branch to react check for enemies
+    async def stats(self,scry:bool=False,divine:bool=False):
+        hpDis = ""
+        shieldDis = "None"
+        lootDis = ""
+        i=0
+        while i < self.hp:
+            self.hpDis = self.hpDis + ":heart:"
+            i+=1
+        i=0
+        if self.shield ==0: self.shieldDis = "None"
+        else: self.shieldDis = ""
+        while i < self.shield:
+            self.shieldDis = self.shieldDis + ":shield:"
+            i+=1
+        MyEmbed = nextcord.Embed(title = self.name, description = "A Goblin has appeared",color = nextcord.Colour.green)
+        #MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
+        MyEmbed.add_field(name="HP:heart:", value=hpDis,inline=True)
+        MyEmbed.add_field(name="Shields:shield:", value=shieldDis,inline=True)
+        if divine == True:
+            lootDis = "A "
+            rarity = set()
+            for x in self.loot:
+                temp = ""
+                match(x.rarity):
+                    case 1:
+                        temp = "**Common**"
+                    case 2:
+                        temp = "**Rare**"
+                    case 3:
+                        temp = "**Unique**"
+                    case _:
+                        print(f"Something went wrong when getting {x.name}")
+                lootDis = lootDis + x.name + " scroll. " + temp + " rarity.\n"
+            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
+            await self.room.channel.send(embed=MyEmbed)
+        elif scry == True:
+            lootDis = "Scrolls of "
+            rarity = set()
+            for r in self.loot:
+                match(r.rarity):
+                    case 1:
+                        rarity.add("**Common**")
+                    case 2:
+                        rarity.add("**Rare**")
+                    case 3:
+                        rarity.add("**Unique**")
+                    case _:
+                        print(f"Something went wrong when getting {r.name} rarity")
+            for x in rarity:
+                lootDis = lootDis + x + " rarity\nScrolls of "
+            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
+            await self.room.channel.send(embed=MyEmbed)
+        else:
+            await self.room.channel.send(embed=MyEmbed)
+    async def death(self):
+        pass
+    def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
+        print("starting to create loot table.")
+        enough = False # I want to put a cap on how much GOOD stuff the loot table can have.
+        count = 0
+        w = Rogues.deckWeight()
+        match difficulty:
+            case 1: # very small chance for unique. slightly higher for rare
+                while len(self.loot)<4: # limit 1 unique and at most 2 rare. Should always be at least 1 common
+                    l = random.choices(deck,w,k=1)
+                    if count == 3:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case 2: # better rates
+                while len(self.loot)<5: # limit 2 unique and at most 2 rare. Should always be at least 1 common
+                    l = random.choices(deck,w,k=1)
+                    if count == 2:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case 3: # decent chance for unique and rare
+                while len(self.loot)<7: # limit 3 unique and at most 4 rare. May not have any common.
+                    l = random.choices(deck,w,k=1)
+                    if count == 4:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+                    elif l.rarity == "Unique" and enough==False:
+                        if count < 3:
+                            self.loot.add(l)
+                            enough = True
+            case _: # no unique available
+                while len(self.loot)<3:
+                    l = random.choices(deck,w,k=1)
+                    if count == 2:
+                        enough = True
+                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
+                        self.loot.add(l)
+                        if l.rarity == "Rare":
+                            count+=1
+                    elif l.rarity == "Common" and enough==True:
+                        self.loot.add(l)
+        for i in self.loot:
+            deck.remove(i)
+        return self.loot
+
 class Player:
-    name="player"
-    uid=0
-    hp = 5
-    hpDis = ""
-    shield = 0
-    shieldDis = "None"
+    name="player" #placeholder name
+    uid=0 #player id
+    hp = 5 # hp stat
+    hpDis = "" # hp display
+    shield = 0 # shield stat
+    shieldDis = "None" # shield display
     hand = [] # Players can hold a max of 5 scrolls
-    handDis = ""
-    Rogue = False
-    turnDone = False
+    handDis = "" # display all the player's scrolls
+    Rogue = False # if they're rogue
+    turnDone = False # boolean to check if their turn is done
     mem = nextcord.Member # incase I need anything specific from discords member class
-    reacting = False
-    soul = ""
-    dodge = False
-    dCount = 0
-    pRoom = None
-    cRoom = None
-    nRoom = None
-    movement = True
-    delve = False
-    map = []
-    greed = 0
-    reborn = False
-    pCount = 0
-    bID = 0
+    reacting = False #bool to see if they're currently reacting to something
+    soul = "" # string for soulmate
+    dodge = False # dodge boolean if they have dodge count
+    dCount = 0 # dodge count
+    pRoom = None # previous room
+    cRoom = None # current room
+    nRoom = None # next room
+    movement = True # boolean for if the player is allowed to move to another room
+    delve = False # boolean for the vote to delve deeper
+    map = [] # record of the player's path
+    greed = 0 # greed amount
+    reborn = False # bool check for if they will be reborn upon death
+    pCount = 0 # polymorph counter
+    bID = 0 # unique player button ID otherwise other players can use the buttons
     #potentially just add a player variable that is initially their discord uid and then increment that to use as custom ID for their buttons
     def __init__(self,player:nextcord.Member,uid):
-        if player.nick!=None:self.name = player.nick
-        else: self.name = player.name
-        self.mem = player
+        if player.nick!=None:self.name = player.nick # using their nickname instead of their actual discord username
+        else: self.name = player.name # if they don't have a nickname
+        self.mem = player 
         self.uid = uid
         self.hand = []
         self.hp = 5
@@ -75,7 +230,7 @@ class Player:
         self.turnDone = False
         self.handDis = ""
         self.hpDis = ""
-        self.shieldDis="None"
+        self.shieldDis="None" # Start with no shields
         self.reacting = False
         self.soul = ""
         self.pRoom = None
@@ -86,73 +241,69 @@ class Player:
         self.reborn = False
         self.pCount = 0
         self.bID = player.id
-        print(self.bID)
-        print("player created")
-    async def stats(self,interaction:nextcord.Interaction):
-        self.hpDis = ""
-        self.shieldDis = "None"
-        self.handDis = ""
+        #print(self.bID)
+        #print("player created")
+    async def stats(self,interaction:nextcord.Interaction): # command to display player stats
         i=0
-        while i < self.hp:
+        while i < self.hp: # Counts how much HP
             self.hpDis = self.hpDis + ":heart:"
             i+=1
         i=0
-        if self.shield ==0: self.shieldDis = "None" 
+        if self.shield ==0: self.shieldDis = "None"  # check if they have any shields
         else: self.shieldDis = ""
-        while i < self.shield:
+        while i < self.shield: # Count shields
             self.shieldDis = self.shieldDis + ":shield:"
             i+=1
-        self.handDis = ""
-        if len(self.hand)==0: 
+        if len(self.hand)==0: # if they have no scrolls 
             self.handDis = "You have no scrolls. I'm surprised that you're even still alive."
         i=0
-        while i < len(self.hand):
-            if len(self.hand)==1:
+        while i < len(self.hand): # Going through their hand
+            if len(self.hand)==1: # if there's only one scroll
                 self.handDis = f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n"
-            elif i == len(self.hand):
-                break
-            elif i == len(self.hand)-1:
+#            elif i == len(self.hand): #this should happen automatically
+#                break
+            elif i == len(self.hand)-1: # if it's the last one change the formatting a bit.
                 self.handDis = self.handDis + f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n-# You can use the view command to inspect your scrolls"
-            else:
+            else: # build the string for hand details
                 self.handDis = self.handDis + f"{i+1}. **{self.hand[i].name}** a(n) __{self.hand[i].type}__ type of spell\n"
             i+=1
-        MyEmbed = nextcord.Embed(title = self.name, description = "These are your stats",color = nextcord.Colour(0xFFD700))
-        MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
-        MyEmbed.add_field(name="HP:heart:", value=self.hpDis,inline=True)
-        MyEmbed.add_field(name="Shields:shield:", value=self.shieldDis,inline=True)
-        MyEmbed.add_field(name="PlayerID",value=self.uid,inline=True)
-        if self.Rogue:
+        MyEmbed = nextcord.Embed(title = self.name, description = "These are your stats",color = nextcord.Colour(0xFFD700)) # Make the embed for stats
+        MyEmbed.set_thumbnail(url=self.mem.display_avatar.url) # thumbnail is user's pfp
+        MyEmbed.add_field(name="HP:heart:", value=self.hpDis,inline=True) # HP title
+        MyEmbed.add_field(name="Shields:shield:", value=self.shieldDis,inline=True) # Shield title
+        MyEmbed.add_field(name="PlayerID",value=self.uid,inline=True) # UID
+        if self.Rogue: # add this if the player is an evil one
             MyEmbed.add_field(name="Evil?",value="Yes",inline=True)
-        if self.dCount>0:
+        if self.dCount>0: # add this if the player currently has some dodge charges.
             MyEmbed.add_field(name="Invis?",value=f"{self.dCount} turn(s)",inline=True)
-        if self.soul != "":
+        if self.soul != "": # add this if the player has a soulmate
             MyEmbed.add_field(name="Soulmate?", value=self.soul,inline=True)
-        MyEmbed.add_field(name="Current room",value=self.cRoom.name,inline=True)
-        MyEmbed.add_field(name="Owned Scrolls",value=self.handDis,inline=False)
-        await interaction.response.send_message(embed=MyEmbed,ephemeral=True)
-    async def addScroll(self,scroll,interaction:nextcord.Interaction=None,gifter=None):
-        if len(self.hand)<5:
+        MyEmbed.add_field(name="Current room",value=self.cRoom.name,inline=True) # Prints out their current room
+        MyEmbed.add_field(name="Owned Scrolls",value=self.handDis,inline=False) # Prints out their hand
+        await interaction.response.send_message(embed=MyEmbed,ephemeral=True) # send it all back to the interaction
+    async def addScroll(self,scroll,interaction:nextcord.Interaction=None,gifter=None): # funciton to add scrolls to users
+        if len(self.hand)<5: # if they aren't at max give them the scroll
             self.hand.append(scroll)
-            scroll.owner = self
+            scroll.owner = self # at this moment in writing this comment I can't remember WHY I added in an owner to the spells but I assume it was just to better help with tracking when moving them.
             print(f"{scroll.name} added to {self.name}'s hand")
-        elif len(self.hand)==5:
+        elif len(self.hand)==5: # if they are at max. Have them choose
             msg = await self.mem.send("You have the full amount of scrolls. You will need to decide what to do with the extra you have just received.")
-            if gifter!=None:
-                await Rogues.chooseScroll(Rogues,interaction,self,self.hand,victim=gifter,full=True,extra=scroll,msg=msg)
-            else:
+            if gifter!=None: # if the extra scroll was a gift from someone else
+                await Rogues.chooseScroll(Rogues,interaction,self,self.hand,victim=gifter,full=True,extra=scroll,msg=msg) # prompt choose scroll and pass the gifter as the victim with the extra scroll
+            else: # if it's not a gift then run choosescroll without a gifter so that the only option is to either replace a scroll or reject the extra
                 await Rogues.chooseScroll(Rogues,interaction,self,self.hand,full=True,extra=scroll,msg=msg)
         else:
             print(f"Something went wrong when dealing scrolls to {self.name}")
-    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None,same=False):
-        print("use scroll?")
-        if spell.aim2 and target2!=None: #leaving a note here. add in an aim and aim2 bool to relevant spells. check them here and then do the action. then go back to the cast part of the new view.
-            await spell.action(interaction,target,target2)
+    async def use(self,interaction:nextcord.Interaction,spell,target:nextcord.Member=None,target2:nextcord.Member=None,E1:Enemy=None,E2:Enemy=None,same=False): # use function I had to help with target acquisition
+        print("use scroll?") # I will need to add in a whole branch of attacking enemies
+        if spell.aim2 and target2!=None: # if it CAN and IS aimed at 2 people.
+            await spell.action(interaction,target,target2) # trigger the spell action on both
             return
-        elif spell.aim and target!=None:
-            if same:
-                await spell.action(interaction,target,same=same)
+        elif spell.aim and target!=None: # if it can be aimed at a person 
+            if same: # this is for if two people can be targetted but only one target was given
+                await spell.action(interaction,target,same=same) # they will be attacked twice
                 return
-            await spell.action(interaction,target)
+            await spell.action(interaction,target) # otherwise then it is a 1 target spell and can be triggered normally
             return
         else:
             if target!=None:
@@ -181,7 +332,7 @@ class Room:
         self.prev = []
         self.guests = []
         self.channel = nextcord.TextChannel
-        self.first = True
+        self.first = False
     def guestList(self):
         guestlist = ""
         for i in self.guests:
@@ -229,7 +380,7 @@ class Room:
             case "Monster":
                 print(f"{self.roomType} event") # Event for rooms with an enemy in them
                 await self.channel.send("There is a monster in this room.")#\n*But I haven't implemented that yet soooooo uhhhh You're allowed to just move on.*\n*You can move again now*")
-                await Rogues.spawn()
+                await Rogues.spawn(Rogues,self)
                 #for i in self.guests:
                 #    i.movement = True
                 #    print(f"{i.name} can move? {i.movement}")
@@ -247,6 +398,10 @@ class Room:
             case "Evil": #I was originally thinking of having opening the chest be optional but I think I'll keep track of who has gotten the most "loot" and they will be the greediest player and I will frame it as them opening the chest.
                 print(f"{self.roomType} event")# Event for THE room. Implement later
                 await self.channel.send("The party arrives at an empty room with nothing but a singular chest inside...")
+            case "Trap":
+                print(f"{self.roomType} event")# Event for the Trap room
+                await self.channel.send("You have triggered a a dungeon trap you have only a moment to react.")
+                # possibly make a whole new function for reacting to dungeon stuff traps/monsters
             case _:
                 print(f"Something went wrong running the events for a room.\n{self.roomType}")
                 await self.channel.send("This is not a special room? something went wrong.")
@@ -287,7 +442,7 @@ class Rogues(commands.Cog):
             await Rogues.talk(self,story,safe)
             await msg.edit(content=f"{msg.content}\nYou may now assemble in the {safeRoom.mention} OR VC")
         except Exception as e:
-            print(f"220 Before Make finished. An error occured: {e}")
+            print(f"294 Before Make finished. An error occured: {e}")
     async def addPlayer(self,player:nextcord.Member,uid):
         match uid:
             case 1:
@@ -348,11 +503,14 @@ class Rogues(commands.Cog):
                 if name == i.name:
                     return i
     async def talk(self,speech:str,room:Room=None,msg:nextcord.message=None,done=False): #command I'm going to use for exposition from the bot
-        MyEmbed = nextcord.Embed(title ="Beru the Guide",description = "The Guide has something to say.",color = nextcord.Colour(0xFFD700))
-        MyEmbed.set_thumbnail(url=self.bot.user.avatar.url)
-        MyEmbed.add_field(name="Beru says:", value=speech,inline=False)
-        if done:
-            return MyEmbed
+        global ready
+        if ready:
+            MyEmbed = nextcord.Embed(title ="Beru the Guide",description = "The Guide has something to say.",color = nextcord.Colour(0xFFD700))
+            MyEmbed.set_thumbnail(url=self.bot.user.avatar.url)
+            MyEmbed.add_field(name="Beru says:", value=speech,inline=False)
+            ready = False # set the ready check to false since the game has started
+        if done: # I'll be honest I've come back to this and can not understand why I have this here or what was in my brain and I'm frankly terrified to remove it. I understand everything else I was doing about this command excluding this one boolean
+            return #scratch that ^ I think I have this for when they return back to the room and the initial message is already done. if not then that's what it is now.
         else:
             if msg != None:
                 await msg.edit(embed=MyEmbed)
@@ -418,7 +576,7 @@ class Rogues(commands.Cog):
             match (difficulty): #unsure how I want to tackle the exit situation.
                 case 0:
                     types = ["Monster","Loot","Trap"]
-                    weight = [0.15,0.80,0.05]
+                    weight = [0.85,0.10,0.05]
                     room = random.choices(types,weight,k=1)
                     room = Room(name=f"Room{RC}",id=RC,exit=False,roomType=str(room[0]))
                 case 1:
@@ -497,7 +655,7 @@ class Rogues(commands.Cog):
                 goblins = tuple("Goblina","Gobshi","Gobuta","Rigurd","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png","Beru-Bot/Resources/gobuta.png","Beru-Bot/Resources/gobRigurd.png")
                 weights = [0.01,0.3,0.44,0.25]
                 look = random.choices(goblins[4:7],weights,k=1)
-                name = goblins.index(look) - 4
+                name = goblins.index(look - 4)
                 Enemy(room,look,goblins[name])
             case 2:
                 #goblins = ["Goblina",,"Beru-Bot/Resources/goblina.png"]
@@ -508,8 +666,9 @@ class Rogues(commands.Cog):
             case _:
                 goblins = ["Goblina","Gobshi","Beru-Bot/Resources/goblina.png","Beru-Bot/Resources/gobshi.png"]
                 weights = [0.1,0.9]
+                print(len(goblins[2:3])) #test for this. and after fixing check if spawn works...afterwards add more print checks to see where it freezes when starting a 2nd game
                 look = random.choices(goblins[2:3],weights,k=1)
-                name = goblins.index(look) - 2
+                name = goblins.index(look - 2)
                 Enemy(room,look,goblins[name])
     @commands.command()
     @commands.check(is_me)
@@ -564,7 +723,6 @@ class Rogues(commands.Cog):
             return
         else:
             await interaction.response.defer()
-        ready = False # set the ready check to false since the game has started
         people = set()
         people.add(interaction.user)
         people.add(member1)
@@ -615,28 +773,31 @@ class Rogues(commands.Cog):
         if isinstance(error,nextcord.errors.ApplicationCommandOptionMissing):
             await ctx.send("Not enough players.")
     @nextcord.slash_command(name="teardown",description="End the game")
-    @application_checks.check(is_me or ongoing)    
+    @application_checks.check(is_me or ongoing)
     async def teardown(self,interaction:nextcord.Interaction):
         await interaction.response.send_message("Shutting down Game...")
+        global ready
+        del ready
         global safe
         del safe
+        global floor
+        for x in floor:
+            del x
+        del floor
         await playerRole.delete()
         for i in category.channels:
             await i.delete()
         await category.delete()
-        for x in floor:
-            del x
         print("g")
+        global players
         for k in players:
             for l in k.hand:
-                l.remove()
-                deck.append(l)
+                del l
             del k
+        global deck
         for j in deck:
             del j
         print("o")
-        global ready
-        ready = True
         deck = []
         global evil
         evil = False
@@ -645,11 +806,8 @@ class Rogues(commands.Cog):
         deads = []
         global bads
         bads = 0
-        global start
-        start = False
         global vote
         vote = 0
-        floor = []
         global floornum
         floornum = 1
         print("GAME OVER")
@@ -738,7 +896,7 @@ class Rogues(commands.Cog):
                 if caster.cRoom.cleared == False:
                     print("not cleared yet M")
                     await interaction.send("You must deal with the monster in the room first.")
-                    #return
+                    return
             if caster.cRoom.roomType == "Loot":
                 print("leaving loot room")
                 await caster.mem.send("You are leaving the loot behind. It may not be here when/if you return.")
@@ -757,23 +915,18 @@ class Rogues(commands.Cog):
     @player.subcommand(name="delve",description="Delve to the next floor of the dungeon")
     async def delve(self,interaction:nextcord.Interaction): # Talk to chafe about tackling delving when not everyone is in the exit
         caster = self.identify(interaction.user)
-        vote = 0
+        vote+=1 
         if caster.cRoom.exit == True:
             msg = "Player Votes:\n"
             await interaction.response.send_message(content=msg,ephemeral=True)
             caster.delve = True
-            for i in players:
+            for i in players: # Tallying who voted what
                 if i.cRoom.exit and i.delve:
                     msg = msg + f"{i.name} voted to delve deeper.\n"
                     await interaction.edit(msg)
-                    #implement group drag here.
                 else:
-                    msg = msg + f"{i.name} did **NOT** vote to delve deeper.\n"
+                    msg = msg + f"{i.name} did **NOT** vote to delve deeper or is not in the exit room.\n"
                     await interaction.edit(msg)
-                    '''if i.delve: # count the vote of players that want to move on
-                        vote+=1
-                    else: # players who didn't vote to move on
-                        await interaction.send("Not all players are in the exit room. Please wait.")'''
             if vote >= len(players)/2:
                 await self.newFloor()
             else:
@@ -789,7 +942,7 @@ class Rogues(commands.Cog):
             await interaction.send(f"{caster.name} forgot they were a sentient meatball and can not do any actions.")
             return
         if(caster.cRoom.roomType == "Loot"):
-            caster.cRoom.event(caster)
+            await caster.cRoom.event(caster)
         else:
             await interaction.response.send_message("You are not in a Loot room.")
     #idea for a map command the player can use
@@ -798,15 +951,14 @@ class Rogues(commands.Cog):
         caster = self.identify(interaction.user)
         MyEmbed = nextcord.Embed(title = caster.name, description = "This is your path.",color = nextcord.Colour(0xFFD700))
         MyEmbed.set_thumbnail(url=caster.mem.display_avatar.url)
-        first = True
         if caster.map == [safe]:
             await interaction.response.send_message("You have not explored the dungeon yet...get off your ass.")
             return
         else:
             for i in caster.map:
-                if first:
+                if i.first:
                     path = "The Saferoom"
-                    first = False
+                    i.first = False
                 elif i == safe:
                     path = f"{path}-->The Saferoom"
                 else:
@@ -1023,8 +1175,11 @@ class Rogues(commands.Cog):
             if self.smite:
                 room = Rogues.findRoom(Rogues,self.label)
                 if self.victim.cRoom == room:
-                    await interaction.send(f"*Perhaps you are divine*. You have accurately divined the location of your target. You have cast judgment upon {self.victim.name}")
+                    await interaction.send(f"*Perhaps you really are divine*. You have accurately divined the location of your target. You have cast judgment upon {self.victim.name}")
                     await Rogues.damage(Rogues,self.victim,attacker=self.caster,smite=True)
+                else: # smite the user for their ignorance
+                    await interaction.send(f"You are **not** among the Divine. The gods cast their judgement on you and your foolishness!")
+                    await Rogues.damage(Rogues,self.caster,smite=True)
                 for i in self.view.children:
                     i.disabled =True
                 await self.view.oginter.edit_original_message(view=self.view)
@@ -1598,16 +1753,20 @@ class Rogues(commands.Cog):
             z.turnDone = False
             z.movement = True    
     async def newFloor(self):
-        for i in category.text_channels:
-            if i.name =="saferoom" or i == safeVC:
+        for i in category.text_channels: # each channel
+            if i.name =="saferoom" or i == safeVC: # skip the saferoom and vc
                 continue
             else: #delete all rooms each floor or save them for post game review?
                 await i.delete()
-        await safeRoom.send("### I've brought back the Saferoom")
-        RC = 0
-        if floornum > 3:
+        await safeRoom.send("Advancing to the next Floor...")
+        RC = 0 # room count but I may decide not to use this
+        if floornum > 3: # after 3 floors the evil chest will be activated and then the REAL game starts
+            global difficulty
             difficulty +=1
-            floornum = 1
+            if difficulty == 0:
+                floornum = 1 # reset to floor 1. thematically we are now counting/going up
+            else:
+                floornum += 1
         match difficulty:
             case 0:
                 match floornum:
@@ -1661,8 +1820,8 @@ class Rogues(commands.Cog):
             case 3:
                 #create last evil floor.
                 print(difficulty)
-        await safeRoom.send("Advancing to the next Floor...")
-        for i in players:
+        await safeRoom.send("### I've regenerated and transported us all back to the Saferoom") # Worldbuilding
+        for i in players: # reset necessary values for all players
             print(f"Resetting {i.name} for the next floor")
             i.movement = True
             i.cRoom = safe
@@ -1676,10 +1835,12 @@ class Rogues(commands.Cog):
             i.nRoom = safe.next
         for i in floor:
             if i == safe:
-                pass
+                i.first = True # triggering the safe room initial event
+                continue
             else:
                 del i
         floornum+=1
+
 class Scroll: #This will all be internal. No player interaction to create scrolls for the game.
     name = ""
     type = "" # Off Def Anc
@@ -1688,14 +1849,14 @@ class Scroll: #This will all be internal. No player interaction to create scroll
     avoid = True # Whether it can be avoided
     copy = 1 # will increment with each scroll that is created under the same name
     count = 3 # How many are in the deck total. This variable will be different for the different named scrolls but not change beyond that.
-    aim = False 
-    aim2 = False
+    aim = False # 1st target
+    aim2 = False # 2nd target
     serial = 0 # Serial number throughout the whole deck.
     flavor = "" # Flavor text of the scroll
-    effect = ""
-    image = ""
-    owner = None
-    rarity = ""
+    effect = "" # basic description
+    image = "" # image resource path
+    owner = None 
+    rarity = "" # still grappling with how I want to handle rarity
     def __init__(self,name,stype,counter,block,avoid,copy,count,flavor,effect,image,rank,aim=False,aim2=False):
         self.name = name
         self.type = stype
@@ -1721,14 +1882,14 @@ class Scroll: #This will all be internal. No player interaction to create scroll
                 self.rarity =  ""
         if name == "Wish":
             wCount = 0
-    def toPrint(self):
+    def toPrint(self): # used internally when I needed to check stuff
         print(f"{self.name}. Type: {self.type}. Serial Number: {self.copy}. There are {self.count} total in the dungeon. Aim Values are {self.aim} and {self.aim2}")
     async def action(self,interaction:nextcord.Interaction,target=None,target2=None,same:bool=False):
         caster = Rogues.identify(Rogues,interaction.user)# Can set all these up outside each individual action.
         if target!=None:
             victim = Rogues.identify(Rogues,target)
         if target2!=None:
-            v2 = Rogues.identify(Rogues,target2)
+            v2 = Rogues.identify(Rogues,target2) # victim 2
         used = False
         match str.lower(self.name):
             case "teleport": # just used to avoid an attack for right now so not a lot needs to be here.
@@ -2012,158 +2173,6 @@ class Scroll: #This will all be internal. No player interaction to create scroll
             if caster.dCount>0: caster.dCount-=1
         else:
             await interaction.send("Your scroll was not used. If you try again. Be better.",ephemeral=True)
-
-class Enemy: #edit damage function to include what happens with enemies
-    hp = 1 # MAYBE scale with difficulty
-    atk = 1 # scale this with difficulty
-    loot = set()
-    room = None
-    evil = True
-    look = ""
-    name = "Goblin"
-    def __init__(self,room,look,name=None):
-        self.room = room
-        self.look = look
-        self.name = name
-        if name == "Goblina":
-            self.hp = 1
-            self.atk = 0
-        else:
-            self.hp = self.hp * difficulty
-            self.atk = self.atk * difficulty
-        self.lootTable()
-    async def action(self,interaction:nextcord.Interaction=None):# function for the enemy turn
-        targets = []
-        for i in self.room.guests:
-            if i.evil == False:
-                targets.append(i)
-        victim = random.choice(targets)
-        await self.room.channel.send("The Goblin attacks a random person in the room.")
-        # await Rogues.gReact()
-        # Make a new type of react check function that potentially doesn't need an interaction.
-        # Need to think out attacking enemies and vice versa
-        # Add a whole new branch to react check for enemies
-    async def stats(self,scry:bool=False,divine:bool=False):
-        hpDis = ""
-        shieldDis = "None"
-        lootDis = ""
-        i=0
-        while i < self.hp:
-            self.hpDis = self.hpDis + ":heart:"
-            i+=1
-        i=0
-        if self.shield ==0: self.shieldDis = "None"
-        else: self.shieldDis = ""
-        while i < self.shield:
-            self.shieldDis = self.shieldDis + ":shield:"
-            i+=1
-        MyEmbed = nextcord.Embed(title = self.name, description = "A Goblin has appeared",color = nextcord.Colour.green)
-        #MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
-        MyEmbed.add_field(name="HP:heart:", value=hpDis,inline=True)
-        MyEmbed.add_field(name="Shields:shield:", value=shieldDis,inline=True)
-        if divine == True:
-            lootDis = "A "
-            rarity = set()
-            for x in self.loot:
-                temp = ""
-                match(x.rarity):
-                    case 1:
-                        temp = "**Common**"
-                    case 2:
-                        temp = "**Rare**"
-                    case 3:
-                        temp = "**Unique**"
-                    case _:
-                        print(f"Something went wrong when getting {x.name}")
-                lootDis = lootDis + x.name + " scroll. " + temp + " rarity.\n"
-            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
-            await self.room.channel.send(embed=MyEmbed)
-        elif scry == True:
-            lootDis = "Scrolls of "
-            rarity = set()
-            for r in self.loot:
-                match(r.rarity):
-                    case 1:
-                        rarity.add("**Common**")
-                    case 2:
-                        rarity.add("**Rare**")
-                    case 3:
-                        rarity.add("**Unique**")
-                    case _:
-                        print(f"Something went wrong when getting {r.name} rarity")
-            for x in rarity:
-                lootDis = lootDis + x + " rarity\nScrolls of "
-            MyEmbed.add_field(name="Enemy can drop:",value=lootDis,inline=False)
-            await self.room.channel.send(embed=MyEmbed)
-        else:
-            await self.room.channel.send(embed=MyEmbed)
-    async def death(self):
-        pass
-    def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
-        print("starting to create loot table.")
-        enough = False # I want to put a cap on how much GOOD stuff the loot table can have.
-        count = 0
-        w = Rogues.deckWeight()
-        match difficulty:
-            case 1: # very small chance for unique. slightly higher for rare
-                while len(self.loot)<4: # limit 1 unique and at most 2 rare. Should always be at least 1 common
-                    l = random.choices(deck,w,k=1)
-                    if count == 3:
-                        enough = True
-                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
-                        self.loot.add(l)
-                        if l.rarity == "Rare":
-                            count+=1
-                    elif l.rarity == "Common" and enough==True:
-                        self.loot.add(l)
-                    elif l.rarity == "Unique" and enough==False:
-                        if count < 3:
-                            self.loot.add(l)
-                            enough = True
-            case 2: # better rates
-                while len(self.loot)<5: # limit 2 unique and at most 2 rare. Should always be at least 1 common
-                    l = random.choices(deck,w,k=1)
-                    if count == 2:
-                        enough = True
-                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
-                        self.loot.add(l)
-                        if l.rarity == "Rare":
-                            count+=1
-                    elif l.rarity == "Common" and enough==True:
-                        self.loot.add(l)
-                    elif l.rarity == "Unique" and enough==False:
-                        if count < 3:
-                            self.loot.add(l)
-                            enough = True
-            case 3: # decent chance for unique and rare
-                while len(self.loot)<7: # limit 3 unique and at most 4 rare. May not have any common.
-                    l = random.choices(deck,w,k=1)
-                    if count == 4:
-                        enough = True
-                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
-                        self.loot.add(l)
-                        if l.rarity == "Rare":
-                            count+=1
-                    elif l.rarity == "Common" and enough==True:
-                        self.loot.add(l)
-                    elif l.rarity == "Unique" and enough==False:
-                        if count < 3:
-                            self.loot.add(l)
-                            enough = True
-            case _: # no unique available
-                while len(self.loot)<3:
-                    l = random.choices(deck,w,k=1)
-                    if count == 2:
-                        enough = True
-                    if l.rarity == "Common" or l.rarity == "Rare" and enough == False:
-                        self.loot.add(l)
-                        if l.rarity == "Rare":
-                            count+=1
-                    elif l.rarity == "Common" and enough==True:
-                        self.loot.add(l)
-        for i in self.loot:
-            deck.remove(i)
-        return self.loot
     
 # list of rooms I can randomize and then in second half I add the exit room to the list
 

@@ -147,7 +147,7 @@ class Misc(commands.Cog):
         else:
             player = hand.lower()
         await ctx.send(bothand)
-        if bothand == "🪨":
+        if bothand == "nice":
             bothand = "rock"
         if bothand == "📜":
             bothand = "paper"
