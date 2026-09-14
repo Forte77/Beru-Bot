@@ -42,18 +42,18 @@ class Enemy: #edit damage function to include what happens with enemies
     loot = set() # set because it doesn't allow duplicates
     room = None 
     evil = True # adding this because I may in the future make something that only targets evil beings also because Goblina won't be evil.
-    look = ""
-    name = "Goblin"
-    def __init__(self,room,look,name=None):
+    look = "" # Image link
+    name = "Goblin" # Goblin name
+    def __init__(self,room,look,name=None): # Initialize Enemy
         self.room = room
         self.look = look
         self.name = name
-        if name == "Goblina":
-            self.hp = 1
-            self.atk = 0
-            self.evil = False
-        else:
-            self.hp = self.hp + difficulty
+        if name == "Goblina": # Special encounter
+            self.hp = 1 # any attack will kill her
+            self.atk = 0 # she will not hurt you
+            self.evil = False # She isn't even evil
+        else: # if it's not her then...
+            self.hp = self.hp + difficulty 
             if (difficulty > 0):
                 self.atk = self.atk * difficulty
             else:
@@ -124,7 +124,7 @@ class Enemy: #edit damage function to include what happens with enemies
             await self.room.channel.send(embed=MyEmbed)
         else:
             await self.room.channel.send(embed=MyEmbed)
-    async def death(self):
+    async def death(self): # Still need to work on this later. I want to somehow work in a dead people section and chat.
         pass
     def lootTable(self): # I need to determine: rarity of loot the enemy can have, how much loot, which loot from selected rarity/rarities,
         print("starting to create loot table.")
