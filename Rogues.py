@@ -16,6 +16,12 @@ with open("BotToken.txt",'r') as file: # Obviously not going to have the Bot Tok
     token = lines[0]
     own = lines[1]
     own = int(own)
+
+# Priority list
+# Get back to looking at connecting rooms. I made a connect function. I don't think I tested it or it even works.
+# 
+# 
+
 #Note: Coding commands not event. Command decorator calls a function. Event itself is a function
 async def is_me(arg): #Function to check for myself
         if isinstance(arg,nextcord.Interaction): #adding in slash command functionality so I need to change the is_me check to use context and interactions
@@ -84,7 +90,7 @@ class Enemy: #edit damage function to include what happens with enemies
         while i < self.shield:
             self.shieldDis = self.shieldDis + ":shield:"
             i+=1
-        MyEmbed = nextcord.Embed(title = self.name, description = "A Goblin has appeared",color = nextcord.Colour.green)
+        MyEmbed = nextcord.Embed(title = self.name, description = "A Goblin has appeared",color = nextcord.Colour.green) 
         #MyEmbed.set_thumbnail(url=self.mem.display_avatar.url)
         MyEmbed.add_field(name="HP:heart:", value=hpDis,inline=True)
         MyEmbed.add_field(name="Shields:shield:", value=shieldDis,inline=True)
@@ -306,45 +312,45 @@ class Player:
             await spell.action(interaction,target) # otherwise then it is a 1 target spell and can be triggered normally
             return
         else:
-            if target!=None:
-                await spell.action(interaction,target)
+            if target!=None: # targetting one person
+                await spell.action(interaction,target) # use on that person
             else:
-                await spell.action(interaction)
+                await spell.action(interaction) # not a targetting spell
             return
 class Room:
     id = None
     name = None
     channel = nextcord.TextChannel
-    next = []
-    prev = []
-    exit = False
-    guests = []
+    next = [] # record of the next rooms that connect to this
+    prev = [] # record of the previous rooms that connected to this one
+    exit = False # if the room is the one that can go to the next floor
+    guests = [] # people in the room
     roomType = "" # monster loot trap exit
-    cleared = False
+    cleared = True #whether the room was cleared of monsters
     first = False # Bool for when the room was first entered
     def __init__(self,name,id,exit,roomType):
         self.id = id
         self.name = name
         self.exit = exit
         self.roomType = roomType
-        self.cleared = False
-        self.next = []
+        self.cleared = True # when I first made this I made it to be False at default. I'm now thinking it should be set to true for all rooms and then monster rooms START at False
+        self.next = [] 
         self.prev = []
         self.guests = []
         self.channel = nextcord.TextChannel
         self.first = False
-    def guestList(self):
+    def guestList(self): # list of all the people in the room
         guestlist = ""
         for i in self.guests:
             guestlist += f"{i.name}----"
         return guestlist
-    def connect(self,r=None,rooms:list=None,e=None):
+    def connect(self,r=None,rooms:list=None,e=None): # Function to connect rooms (self,curent room,list of available rooms,exit room)
         if rooms != None:
             for i in rooms:
                 self.next.append(i)
                 i.prev.append(self)
                 rooms.remove(i)
-        elif exit != None:
+        elif exit != None: # admittedly I don't fully remember right now how this was supposed to work. I think this was the plan but I hadn't implemented it yet.
             self.next.append(e)
         elif r != None:
             self.next.append(r)
